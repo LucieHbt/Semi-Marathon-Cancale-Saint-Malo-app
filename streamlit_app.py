@@ -24,7 +24,7 @@ st.markdown(
 
     header[data-testid="stHeader"] {{background: transparent;}}
 
-    .st-emotion-cache-lhe5w4 {{padding: 1rem 1rem 1rem;}}
+    .st-emotion-cache-zy6yx3 {{padding: 1rem 1rem 1rem;}}
 
     .stApp [data-testid="stCaptionContainer"],
     .stApp [data-testid="stCaptionContainer"] * {{color: rgba(255,255,255,.70);}}
@@ -227,7 +227,7 @@ st.markdown(
        DISTRIBUTION
        ========================= */
 
-    .st-key-distrib {{
+    .st-key-distrib, .st-key-evol {{
         background: rgba(15,43,48,.62);
         backdrop-filter: blur(4px);
         border-radius: 0 0 12px 12px;
@@ -235,11 +235,11 @@ st.markdown(
         margin-top: 0;
     }}
 
-    .st-key-distrib div[data-testid="stPlotlyChart"] {{
+    .st-key-distrib div[data-testid="stPlotlyChart"],
+    .st-key-evol div[data-testid="stPlotlyChart"] {{
         background: transparent;
         border-radius: 0;
     }}
-
 
     /* =========================
        FILTRES CATÉGORIES
@@ -484,9 +484,7 @@ def charger() -> pd.DataFrame:
     df["Cat"] = df["Cat"].str.replace(r"^(\w{2})[HF]$", r"\1", regex=True)
     return df
 
-
 ORDRE_CAT = ["CA", "JU", "ES", "SE"] + [f"M{i}" for i in range(10)]
-
 
 def hms(s: float) -> str:
     if pd.isna(s):
@@ -647,7 +645,7 @@ with st.container(key="distrib"):
     with g_dist:
         fig = go.Figure()
         for sexe, couleur, nom in (("Homme", ROUGE, "Hommes"), ("Femme", TEAL, "Femmes")):
-            y = densite(dp_arr.loc[arr["Sx"] == sexe, "Temps_s"], grille, bw=240)
+            y = densite(dp_arr.loc[dp_arr["Sx"] == sexe, "Temps_s"], grille, bw=240)
             fig.add_trace(go.Scatter(
                 x=grille, y=y, name=nom, mode="lines", fill="tozeroy",
                 line=dict(color=couleur, width=2),
@@ -679,6 +677,45 @@ with st.container(key="distrib"):
         fig.update_layout(height=380, margin=dict(l=60, r=60, t=20, b=20),
                           paper_bgcolor="rgba(0,0,0,0)", font=dict(color="white"))
         st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
+
+# ----------------------------------------------------------------------------
+# Évolution du nombre de coureurs par édition
+# ----------------------------------------------------------------------------
+st.write("")
+st.markdown(
+    titre("📊", "Évolution du nombre de coureurs",
+          f"Éditions {annees[0]} à {annees[-1]}", f"{len(d):,} en {annee}".replace(",", " ")),
+    unsafe_allow_html=True,
+)
+
+with st.container(key="evol"):
+    evol = (
+        df.groupby(["Annee", "Sx"]).size().unstack(fill_value=0)
+        .reindex(columns=["Femme", "Homme"], fill_value=0)
+    )
+    evol["Total"] = evol[["Femme", "Homme"]].sum(axis=1)
+
+    x = evol.index.astype(str)
+
+    fig = go.Figure()
+    for sexe, couleur, nom in (("Femme", TEAL, "Femmes"), ("Homme", ROUGE, "Hommes")):
+        fig.add_trace(go.Bar(
+            x=x, y=evol[sexe], name=nom,
+            marker=dict(color=couleur,line=dict(color="white", width=[2 if a == annee else 0 for a in evol.index]),
+            ),
+            hovertemplate=f"{nom} : %{{y}} coureurs<extra></extra>",
+        ))
+    # Total au-dessus de chaque barre
+    fig.add_trace(go.Scatter(
+        x=x, y=evol["Total"], mode="text", text=evol["Total"], 
+        textposition="top center", textfont=dict(color="white", size=14), showlegend=False, hoverinfo="skip",
+    ))
+    fig.update_layout(barmode="stack", plot_bgcolor="rgba(0,0,0,0)",paper_bgcolor="rgba(0,0,0,0)",showlegend=False,margin=dict(l=40, r=10, t=20, b=40), 
+                          xaxis=dict(showline=False,showgrid=False,ticks="",),
+                          yaxis=dict(showgrid=False,showline=False,zeroline=False,)
+                          )
+
+    st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
 st.caption(f"Édition {annee}" + ("" if choix == "Scratch" else f" · catégorie {choix}")
            + f" · {len(dp_arr)} arrivants sur {len(dp)} partants · "
