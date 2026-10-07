@@ -1,4 +1,4 @@
-"""Données chronométriques – Cancale / Saint-Malo, 2022 à 2026 (Streamlit)."""
+"""Données chronométriques – semi Cancale Saint-Malo, 2022 à 2026 (Streamlit) """
 from pathlib import Path
 
 import numpy as np
