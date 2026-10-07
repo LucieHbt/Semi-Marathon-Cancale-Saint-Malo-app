@@ -2,7 +2,7 @@
 
 Tableau de bord interactif des résultats chronométriques du semi-marathon de Cancale Saint-Malo, réalisé avec [Streamlit](https://streamlit.io).
 
-[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://statistiques-semi-cancale-saint-malo.streamlit.app/)
+[![Open in Streamlit](https://statistiques-semi-cancale-saint-malo.streamlit.app/)
 
 ## Fonctionnalités
 
