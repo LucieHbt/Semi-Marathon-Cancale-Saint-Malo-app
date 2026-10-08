@@ -8,6 +8,7 @@ dependencies = [
     "numpy>=2.4.4",
     "pandas>=3.0.3",
     "plotly>=7.1.0",
+    "reportlab>=5.0.1",
     "streamlit>=1.61.1",
 ]
 
