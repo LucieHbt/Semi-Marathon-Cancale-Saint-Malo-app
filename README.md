@@ -50,8 +50,8 @@ Les couleurs suivent partout la même règle : **rouge pour les hommes, teal pou
 
 | Colonne   | Description                                                        |
 |-----------|--------------------------------------------------------------------|
-| `Annee`   | Édition de la course (2022 à 2026)                                 |
-| `Nom`     | Nom puis prénom du coureur (ex. `BLONDEL Marin`)                   |
+| `Annee`   | Édition de la course                                               |
+| `Nom`     | Nom puis prénom du coureur (ex. `NOM Prénom`)                      |
 | `Club`    | Club ou association (peut être vide)                               |
 | `Sx`      | Sexe : `Homme`, `Femme` ou `X`                                     |
 | `Cat`     | Catégorie (`SE`, `M0`…)                                            |
