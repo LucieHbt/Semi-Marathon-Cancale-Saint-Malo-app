@@ -280,12 +280,7 @@ def generer_carte(
                 c.restoreState()
             else:
                 c.drawCentredString(xx, yy + 8, _hms(t))
-        else:
-            c.setFillColor(GRIS)
-            c.setFont("Helvetica", 9)
-            c.drawCentredString(gx + gw / 2, (py0 + py1) / 2, "Aucun temps enregistré")
-            c.setFont("Helvetica", 8)
-            c.setFillColor(FOND)
+                
     for a in ordre:
         if biseau:
             c.saveState()
