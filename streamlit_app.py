@@ -1,4 +1,4 @@
-"""Données chronométriques – semi Cancale Saint-Malo, 2022 à 2026 (Streamlit) """
+"""Données chronométriques : semi Cancale Saint-Malo 1989-226"""
 from pathlib import Path
 from carte_pdf import generer_carte
 
@@ -37,29 +37,32 @@ st.markdown(
     .stApp [data-testid="stWidgetLabel"] p {{color: white;font-weight: 600;}}
 
       /* Sélecteur d'édition : posé sur la ligne des onglets, à droite */
-      .st-key-annees {{ display:flex; flex-direction:column; align-items:flex-end; position:relative; z-index:5;margin-bottom:-4.68rem; pointer-events:none; }}
+      .st-key-annees {{ display:flex; flex-direction:column; align-items:flex-end; position:relative; z-index:5; margin-bottom:-4.68rem; pointer-events:none; }}
       .st-key-annees * {{ pointer-events:none; }}
-      .st-key-annees [role="radiogroup"], .st-key-annees [role="radiogroup"] * {{ pointer-events:auto; }}
-      .st-key-annees [data-testid="stElementContainer"] {{ width:fit-content; transform:translateY(18px); }}
-      .st-key-annees [role="radiogroup"] {{ background:rgba(15,43,48,.55); backdrop-filter:blur(4px);border-radius:999px; padding:5px; gap:6px; width:fit-content; border:0; }}
+      .st-key-annees button, .st-key-annees [data-testid="stSelectbox"], .st-key-annees [data-testid="stSelectbox"] * {{ pointer-events:auto; }}
+      .st-key-annees > [data-testid="stLayoutWrapper"] {{ width:250px; margin-left:auto; transform:translateY(14px); }}
+      .st-key-annees [data-testid="stHorizontalBlock"] {{ width:100%; flex-wrap:nowrap; gap:6px; align-items:center; background:rgba(15,43,48,.55); backdrop-filter:blur(4px); border-radius:999px; padding:5px; }}
 
-      .st-key-annees button[role="radio"] {{ background:transparent !important; border:0 !important; border-radius:999px !important; padding:6px 18px; transition:all .18s ease; }}
-      .st-key-annees button[role="radio"] * {{ color:rgba(255,255,255,.75) !important; font-weight:600; }}
-      .st-key-annees button[role="radio"]:hover {{ background:rgba(255,255,255,.12) !important; }}
-      .st-key-annees button[role="radio"]:hover * {{ color:rgba(15, 43, 48, .92) !important; }}
-      .st-key-annees button[role="radio"][aria-checked="true"] {{background:#fff !important }}
-      .st-key-annees button[role="radio"][aria-checked="true"] * {{ color:rgba(15, 43, 48, .92) !important; font-weight:700;font:BOLD }}
+      .st-key-annees [data-testid="stColumn"] {{ min-width:0; }}
+      .st-key-annees [data-testid="stButton"] button {{ width:36px; height:36px; min-height:36px; padding:0; border-radius:50% !important; background:rgba(255,255,255,.12) !important; border:0 !important; transition:all .18s ease; }}
+      .st-key-annees [data-testid="stButton"] button * {{ color:#fff !important; font-size:1.3rem; font-weight:700; line-height:1; }}
+      .st-key-annees [data-testid="stButton"] button:hover:not(:disabled) {{ background:#fff !important; }}
+      .st-key-annees [data-testid="stButton"] button:hover:not(:disabled) * {{ color:{FOND} !important; }}
+      .st-key-annees [data-testid="stButton"] button:disabled {{ opacity:.3; }}
+      .st-key-annees [data-testid="stButton"] button:focus-visible {{ outline:2px solid {TEAL}; outline-offset:2px; }}
 
-      .st-key-annees [data-testid="stButtonGroup"] {{ background:transparent; width:fit-content; }}
-
+      .st-key-annees [data-testid="stSelectbox"] [data-baseweb="select"] > div,
+      .st-key-annees [data-testid="stSelectbox"] .react-aria-ComboBox > div {{ background:#fff !important; border:0 !important; border-radius:999px; min-height:36px; align-items:center; }}
+      .st-key-annees [data-testid="stSelectbox"] * {{ color:{FOND} !important; font-weight:800; }}
+      .st-key-annees [data-testid="stSelectbox"] button {{ background:transparent !important; box-shadow:none !important; border:0 !important; border-radius:0 !important; width:32px; height:100%; min-height:0; padding:0; display:flex; align-items:center; justify-content:center; }}
+      
       /* masqué sur l'onglet « Suivi individuel » (les années n'y servent pas) */
       .stApp:has(.stTabs [role="tab"][data-key="1"][aria-selected="true"]) .st-key-annees {{ display:none; }}
       
       @media (max-width:640px) {{
         .st-key-annees {{ margin-bottom:0; justify-content:flex-start; pointer-events:auto; }}
-        .st-key-annees [data-testid="stElementContainer"] {{ transform:none; }}
-        .st-key-annees button[role="radio"] {{ padding:6px 10px; }}
-        .hero {{ flex-direction:column; align-items:flex-start; gap:10px; }}
+        .st-key-annees {{ align-items:flex-start; }}
+        .st-key-annees > [data-testid="stLayoutWrapper"] {{ width:100%; transform:none; }}        .hero {{ flex-direction:column; align-items:flex-start; gap:10px; }}
         .hero .hero-logo {{ height:64px; }}
         .st-key-export_carte:has(button) {{ margin-bottom:0; align-items:flex-start; pointer-events:auto; }}
         .st-key-export_carte [data-testid="stElementContainer"] {{ transform:none; }}
@@ -328,10 +331,20 @@ annees = sorted(df["Annee"].unique())
  
 # Sélecteur d'édition : rendu avant les onglets pour connaître l'année, placé par CSS sur leur ligne
 with st.container(key="annees"):
-    annee = st.segmented_control(
-        "Édition", annees, default=annees[-1], label_visibility="collapsed"
-    ) or annees[-1]
+    st.session_state.setdefault("annee_sel", annees[-1])
 
+    def _aller(delta: int) -> None:
+        i = annees.index(st.session_state["annee_sel"]) + delta
+        st.session_state["annee_sel"] = annees[min(max(i, 0), len(annees) - 1)]
+
+    c_prec, c_choix, c_suiv = st.columns([1, 3.2, 1], vertical_alignment="center")
+    c_prec.button("‹", key="annee_prec", on_click=_aller, args=(-1,),
+                  disabled=st.session_state["annee_sel"] == annees[0])
+    annee = c_choix.selectbox("Édition", annees[::-1], key="annee_sel",
+                              label_visibility="collapsed")
+    c_suiv.button("›", key="annee_suiv", on_click=_aller, args=(1,),
+                  disabled=st.session_state["annee_sel"] == annees[-1])
+    
 zone_export = st.container(key="export_carte")
 tab_stats, tab_coureur = st.tabs(["📊 Statistiques", "🏃 Suivi individuel"])
  
@@ -624,7 +637,7 @@ def fond_event() -> bytes | None:
 # ----------------------------------------------------------------------------
 
 def preparer_coureurs() -> pd.DataFrame:
-    """Ajoute la place au scratch / au sexe (ex æquo = même place) et la médaille."""
+    """Ajoute la place au scratch / au sexe (ex æquo = même place) et la médaille"""
     r = charger().copy()
     ok = r["Temps_s"].notna()
     r["Place"] = r[ok].groupby(["Annee", "Sx"])["Temps_s"].rank(method="dense")   # = logique des podiums
@@ -645,7 +658,7 @@ def fiche_kpi(col, icone, label, valeur, detail, couleur):
  
  
 def graduations_temps(mini: float, maxi: float) -> tuple[list[float], list[str]]:
-    """Graduations du graphique, toutes les 5 min (10 min si l'amplitude est grande)."""
+    """Graduations du graphique, toutes les 5 min (10 min si l'amplitude est grande)"""
     pas = 300 if (maxi - mini) < 3600 else 600
     deb = int(mini // pas * pas)
     vals = list(range(deb, int(maxi) + pas + 1, pas))
@@ -743,8 +756,10 @@ with tab_coureur:
                     marge = max(120, (y.max() - y.min()) * 0.25)
                     vals, txt = graduations_temps(y.min() - marge, y.max() + marge)
                     ib = int(np.argmin(y))
+                    biseau = len(y) > 8          # beaucoup d'éditions → texte incliné
                     fig = go.Figure(go.Scatter(
-                        x=arr_c["Annee"].astype(str), y=y, mode="lines+markers+text",
+                        x=arr_c["Annee"].astype(str), y=y,
+                        mode="lines+markers" if biseau else "lines+markers+text",
                         line=dict(color=coul_sexe, width=3),
                         marker=dict(size=[16 if k == ib else 10 for k in range(len(y))],
                                     color=[OR if k == ib else coul_sexe for k in range(len(y))],
@@ -755,14 +770,22 @@ with tab_coureur:
                                       "<br>%{customdata[2]:.0f}e " + c["Sx"].iloc[0].lower() + "<extra></extra>",
                         cliponaxis=False,
                     ))
+                    if biseau:
+                        fig.update_layout(annotations=[
+                            dict(x=list(annees).index(a), y=v, text=hms(v), showarrow=False,
+                                 textangle=-60, xanchor="left", yanchor="bottom",
+                                 xshift=-2, yshift=10,
+                                 font=dict(color="white", size=12))
+                            for a, v in zip(arr_c["Annee"], y)
+                        ])
                     fig.update_layout(
-                        height=380, margin=dict(l=10, r=20, t=30, b=10),
+                        height=380, margin=dict(l=10, r=20, t=60 if biseau else 30, b=10),
                         plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font=dict(color="white"),
                         xaxis=dict(type="category", categoryorder="array", categoryarray=[str(a) for a in annees],
-                                   showgrid=False, color="white"),
+                                   showgrid=False, color="white",
+                                   tickangle=-45 if biseau else 0),
                         yaxis=dict(tickvals=vals, ticktext=txt, range=[vals[0], vals[-1]], showgrid=True,
-                                   gridcolor="rgba(255,255,255,.12)", zeroline=False, color="white",
-                                   title="Temps (h:mm)"),
+                                   gridcolor="rgba(255,255,255,.12)", zeroline=False, color="white")
                     )
                     st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
             st.caption("⭐ Point doré = meilleur temps. Plus le point est bas, plus vous avez été rapide. "

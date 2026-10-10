@@ -1,6 +1,5 @@
-"""Carte récap (PDF) d'un coureur – Semi-Marathon de Cancale – Saint-Malo.
-
-Dépendance : reportlab (pur Python ; Pillow est installé avec lui).
+"""Carte récap (PDF) d'un coureur
+Dépendance : reportlab (pur Python ; Pillow est installé avec lui)
 """
 from __future__ import annotations
 
@@ -243,6 +242,7 @@ def generer_carte(
     toutes = sorted(annees)                                   # toutes les éditions (pied de carte)
     ordre = sorted({a for a, _ in resultats}) or toutes      # axe : seulement les éditions courues
     xpos = {a: px0 + (px1 - px0) * (i + 0.5) / len(ordre) for i, a in enumerate(ordre)}
+    biseau = len(ordre) > 6 
     if pts:
         vals = [t for _, t in pts]
         marge = max(120, (max(vals) - min(vals)) * 0.3)
@@ -272,16 +272,29 @@ def generer_carte(
             c.circle(xx, yy, 4.6 if k == ibest else 3.6, stroke=1, fill=1)
             c.setFillColor(FOND)
             c.setFont("Helvetica-Bold", 7)
-            c.drawCentredString(xx, yy + 8, _hms(t))
-    else:
-        c.setFillColor(GRIS)
-        c.setFont("Helvetica", 9)
-        c.drawCentredString(gx + gw / 2, (py0 + py1) / 2, "Aucun temps enregistré")
-    # axe des années : uniquement les éditions auxquelles le coureur a participé
-    c.setFont("Helvetica", 8)
-    c.setFillColor(FOND)
+            if biseau:
+                c.saveState()
+                c.translate(xx - 1, yy + 6)
+                c.rotate(45)
+                c.drawString(0, 0, _hms(t))
+                c.restoreState()
+            else:
+                c.drawCentredString(xx, yy + 8, _hms(t))
+        else:
+            c.setFillColor(GRIS)
+            c.setFont("Helvetica", 9)
+            c.drawCentredString(gx + gw / 2, (py0 + py1) / 2, "Aucun temps enregistré")
+            c.setFont("Helvetica", 8)
+            c.setFillColor(FOND)
     for a in ordre:
-        c.drawCentredString(xpos[a], gy_bot + 12, str(a))
+        if biseau:
+            c.saveState()
+            c.translate(xpos[a] + 3, gy_bot + 24)
+            c.rotate(45)
+            c.drawRightString(0, 0, str(a))
+            c.restoreState()
+        else:
+            c.drawCentredString(xpos[a], gy_bot + 12, str(a))
 
     # ---- pied de carte -----------------------------------------------
     c.setFillColor(white)
