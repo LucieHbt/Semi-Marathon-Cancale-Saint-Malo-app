@@ -37,7 +37,8 @@ st.markdown(
     .stApp [data-testid="stWidgetLabel"] p {{color: white;font-weight: 600;}}
 
       /* Sélecteur d'édition : posé sur la ligne des onglets, à droite */
-      .st-key-annees {{ display:flex; flex-direction:column; align-items:flex-end; position:relative; z-index:5; margin-bottom:-4.68rem; pointer-events:none; }}
+      .st-key-annees {{ display:none; flex-direction:column; align-items:flex-end; position:relative; z-index:5; margin-bottom:-4.68rem; pointer-events:none; }}
+      .stApp:has(.stTabs [role="tab"][data-key="1"][aria-selected="true"]) .st-key-annees {{ display:flex; }}
       .st-key-annees * {{ pointer-events:none; }}
       .st-key-annees button, .st-key-annees [data-testid="stSelectbox"], .st-key-annees [data-testid="stSelectbox"] * {{ pointer-events:auto; }}
       .st-key-annees > [data-testid="stLayoutWrapper"] {{ width:250px; margin-left:auto; transform:translateY(14px); }}
@@ -55,9 +56,6 @@ st.markdown(
       .st-key-annees [data-testid="stSelectbox"] .react-aria-ComboBox > div {{ background:#fff !important; border:0 !important; border-radius:999px; min-height:36px; align-items:center; }}
       .st-key-annees [data-testid="stSelectbox"] * {{ color:{FOND} !important; font-weight:800; }}
       .st-key-annees [data-testid="stSelectbox"] button {{ background:transparent !important; box-shadow:none !important; border:0 !important; border-radius:0 !important; width:32px; height:100%; min-height:0; padding:0; display:flex; align-items:center; justify-content:center; }}
-      
-      /* masqué sur l'onglet « Suivi individuel » (les années n'y servent pas) */
-      .stApp:has(.stTabs [role="tab"][data-key="1"][aria-selected="true"]) .st-key-annees {{ display:none; }}
       
       @media (max-width:640px) {{
         .st-key-annees {{ margin-bottom:0; justify-content:flex-start; pointer-events:auto; }}
@@ -221,8 +219,11 @@ st.markdown(
       .st-key-dl_carte button p {{ color:{FOND}; font-weight:700; }}
       .st-key-dl_carte button:hover {{ background:#eef3f4; }}
 
+      /* Bouton d'export : caché par défaut, visible uniquement sur "Individuel" (3e onglet, data-key="2") */
+      .st-key-export_carte {{ display:none !important; }}
+      .stApp:has(.stTabs [role="tab"][data-key="2"][aria-selected="true"]) .st-key-export_carte {{ display:flex !important; }}
+
       /* visible uniquement sur l'onglet "Suivi individuel" */
-      .stApp:has(.stTabs [role="tab"][data-key="0"][aria-selected="true"]) [data-testid="stLayoutWrapper"]:has(> .st-key-export_carte) {{ display:none; }} 
       .tbl-suivi {{ width:100%; border-collapse:collapse; background:#fff; border-radius:0 0 10px 10px;
                     overflow:hidden; font-family:'Poppins',sans-serif; font-size:.85rem; }}
       .tbl-suivi th {{ background:#eef3f4; color:#0B3A4F; text-align:left; padding:8px 12px; font-weight:700; }}
@@ -328,8 +329,8 @@ def densite(t: pd.Series, grille: np.ndarray, bw: float) -> np.ndarray:
  
 df = charger()
 annees = sorted(df["Annee"].unique())
- 
-# Sélecteur d'édition : rendu avant les onglets pour connaître l'année, placé par CSS sur leur ligne
+
+# ----------------------------------------------- Sélecteur d'édition
 with st.container(key="annees"):
     st.session_state.setdefault("annee_sel", annees[-1])
 
@@ -344,11 +345,265 @@ with st.container(key="annees"):
                               label_visibility="collapsed")
     c_suiv.button("›", key="annee_suiv", on_click=_aller, args=(1,),
                   disabled=st.session_state["annee_sel"] == annees[-1])
-    
+# --------------------------------------------------------------
+     
 zone_export = st.container(key="export_carte")
-tab_stats, tab_coureur = st.tabs(["📊 Statistiques", "🏃 Suivi individuel"])
- 
+tab_stats, tab_edition, tab_coureur = st.tabs(["📊 Général", "👟 Edition","🏃 Individuel"])
+
+# --------------------------------------------------------------------------------
+# Onglet 1 : vue générale
+# --------------------------------------------------------------------------------
 with tab_stats:
+
+    ANNEE_RECORD_ABS = 1994
+
+    # ----------------------------------------------------------------------------
+    # KPI des participations F/H + PB toutes éditions à partir de 1994
+    # ----------------------------------------------------------------------------
+    
+    # Sexe de référence par coureur = sexe le plus fréquent (mode) sur ses éditions
+    sexe_ref = (
+        df.groupby(["Nom", "Sx"]).size().reset_index(name="n")
+        .sort_values(["Nom", "n"], ascending=[True, False])
+        .drop_duplicates("Nom").set_index("Nom")["Sx"].rename("Sx_ref")
+        )
+
+    # Nombre d'éditions distinctes par coureur (indépendamment du sexe déclaré)
+    nb_editions = df.groupby("Nom")["Annee"].nunique().rename("Nb_editions")
+
+    # Tableau de synthèse : un coureur = une ligne
+    coureurs = (
+        pd.concat([nb_editions, sexe_ref], axis=1)
+        .reset_index()
+        .sort_values("Nb_editions", ascending=False)
+    )
+
+    # KPI : leader toutes catégories confondues
+    top = coureurs.iloc[0] if len(coureurs) else None
+
+    # Podiums par sexe
+    partic_f = coureurs[coureurs["Sx_ref"] == "Femme"].nlargest(3, "Nb_editions")
+    partic_h = coureurs[coureurs["Sx_ref"] == "Homme"].nlargest(3, "Nb_editions")
+    
+    # --- Records absolus : uniquement arrivants depuis 1994 ---
+    arr_records = df[(df["Annee"] >= ANNEE_RECORD_ABS) & df["Temps_s"].notna()]
+
+    best_f = arr_records[arr_records["Sx"] == "Femme"].nsmallest(1, "Temps_s")
+    best_h = arr_records[arr_records["Sx"] == "Homme"].nsmallest(1, "Temps_s")
+
+    # --- Participations : TOUTES éditions (1989 → aujourd'hui) ---
+    partic = df.groupby("Nom")["Annee"].nunique().sort_values(ascending=False)
+    top_partic_nom = top["Nom"] if top is not None else None
+    top_partic_nb = int(top["Nb_editions"]) if top is not None else 0
+
+    # --- Podiums du nombre de participations (F / H) ---
+    partic_sexe = (
+        df.groupby(["Nom", "Sx"])["Annee"].nunique()
+        .reset_index(name="Nb_editions")
+    )
+
+    # ----------------------------------------------------------------------------
+    # Affichage des KPI
+    # ----------------------------------------------------------------------------
+    def kpi_record(col, icone, label, valeur, sous, couleur):
+        """KPI 'record' : valeur principale + sous-texte (nom / contexte)."""
+        col.markdown(
+            f"<div class='kpi-card' style='--c:{couleur}'>"
+            f"<div class='kpi-ico'>{icone}</div>"
+            f"<div><div class='kpi-lab'>{label}</div>"
+            f"<div class='kpi-val'>{valeur}</div>"
+            f"<div class='kpi-moy'>{sous}</div></div></div>",
+            unsafe_allow_html=True,
+        )
+
+    k1, k3, k2 = st.columns(3)
+
+    # Meilleur temps féminin (>= 1994)
+    if not best_f.empty:
+        r = best_f.iloc[0]
+        nom, prenom = split_nom(r.Nom)
+        kpi_record(k1, "🏆", "Record féminin", hms(r.Temps_s),
+                f"{prenom} {nom} · {int(r.Annee)}", TEAL)
+    else:
+        kpi_record(k1, "🏆", "Record féminin", "–", f"Aucune donnée depuis {ANNEE_RECORD_ABS}", TEAL)
+
+    # Meilleur temps masculin (>= 1994)
+    if not best_h.empty:
+        r = best_h.iloc[0]
+        nom, prenom = split_nom(r.Nom)
+        kpi_record(k2, "🏆", "Record masculin", hms(r.Temps_s),
+                f"{prenom} {nom} · {int(r.Annee)}", ROUGE)
+    else:
+        kpi_record(k2, "🏆", "Record masculin", "–", f"Aucune donnée depuis {ANNEE_RECORD_ABS}", ROUGE)
+
+    # Plus de participations (toutes éditions)
+    if top_partic_nom:
+        nom, prenom = split_nom(top_partic_nom)
+        kpi_record(k3, "🎖️", "Plus de participations", f"{top_partic_nb}",
+                f"{prenom} {nom}", FOND)
+    else:
+        kpi_record(k3, "🎖️", "Plus de participations", "–", "Aucune donnée", FOND)
+
+    st.write("")
+
+    # ----------------------------------------------------------------------------
+    # Podiums des participations F/H
+    # ----------------------------------------------------------------------------
+    def carte_participation(r, place: int, couleur: str) -> str:
+        """Carte podium pour un coureur classé par nombre d'éditions."""
+        nom, prenom = split_nom(r.Nom)
+        return (
+            f"<div class='pod-card p{place}' style='--c:{couleur}'>"
+            f"<div class='pod-medal'>{MEDAILLE.format(t=40 if place == 1 else 30)}</div>"
+            f"<div class='pod-nom'>{prenom} {nom}</div>"
+            f"<div class='pod-meta'>{r.Sx_ref}</div>"
+            f"<div class='pod-temps'>{int(r.Nb_editions)} éditions</div></div>"
+        )
+
+    def podium_participations(data: pd.DataFrame) -> str:
+        """Podium à partir d'un DataFrame trié décroissant sur Nb_editions."""
+        couleurs = {1: OR, 2: ARGENT, 3: BRONZE}
+        if data.empty:
+            return "<div class='pod-wrap pod-vide'>Aucune donnée</div>"
+        cols = {}
+        for place in (1, 2, 3):
+            if place > len(data):
+                cols[place] = "<div class='pod-col'></div>"
+                continue
+            r = data.iloc[place - 1]
+            cols[place] = f"<div class='pod-col'>{carte_participation(r, place, couleurs[place])}</div>"
+        return f"<div class='pod-wrap'>{cols[2]}{cols[1]}{cols[3]}</div>"
+
+    p1, p2 = st.columns(2)
+    for col, libelle, ico, coul, data in (
+        (p1, "Participations Femmes", ICO_F, TEAL, partic_f),
+        (p2, "Participations Hommes", ICO_H, ROUGE, partic_h),
+    ):
+        col.markdown(
+            titre(ico, libelle, "Toutes éditions", "Nombre d'éditions", coul),
+            unsafe_allow_html=True,
+        )
+        col.markdown(podium_participations(data), unsafe_allow_html=True)
+
+    # ----------------------------------------------------------------------------
+    # Préparation des tranches de temps (partagée par les graphiques de densité)
+    # ----------------------------------------------------------------------------
+    def fmt_h(m: int) -> str:
+        return f"{m // 60}h{m % 60:02d}"
+ 
+    bornes = list(range(TRANCHE_DEBUT, TRANCHE_FIN + 1, TRANCHE_PAS))
+    etiquettes = (
+        [f"< {fmt_h(bornes[0])}"]
+        + [f"{fmt_h(a)} – {fmt_h(b)}" for a, b in zip(bornes[:-1], bornes[1:])]
+        + [f"≥ {fmt_h(bornes[-1])}"]
+    )
+    PALETTE_TRANCHES = ["#2A8F9B", "#3AB5B0", "#6CC9A0", "#A8D67E", "#E6D45F", "#F2A94E",
+                        "#E8743B", "#C24247", "#8E3B6B", "#5B3A7A"]  # du plus rapide (bas) au plus lent (haut)
+    
+    st.write("")
+    sel = df[df["Temps_s"].notna()].copy()          # toutes éditions, toutes catégories
+    sel["Tranche"] = pd.cut(
+        sel["Temps_s"] / 60, bins=[-float("inf")] + bornes + [float("inf")],
+        labels=etiquettes, right=False,
+    )
+   
+    # ----------------------------------------------------------------------------
+    # Graphiques distribution des temps (courbe) / densité par tranche de performance
+    # ----------------------------------------------------------------------------
+    with st.container(key="evol_head"):
+        c_titre, c_vue = st.columns([3, 1], vertical_alignment="center")
+        with c_vue:
+            vue = st.segmented_control(
+                "Graphique", ["Nombre", "Densité"], default="Nombre",
+                key="vue_evol", label_visibility="collapsed",
+            ) or "Nombre"
+        if vue == "Nombre":
+            c_titre.markdown(
+                titre("📶", "Évolution du nombre de coureurs",
+                      f"Éditions {annees[0]} à {annees[-1]}", f"{len(df):,} participations".replace(",", " "), graph=True),
+                unsafe_allow_html=True,
+            )
+        else:
+            c_titre.markdown(
+                titre("🔎", "Évolution de la densité des coureurs",
+                      f"Part des arrivants par tranche de {TRANCHE_PAS} min · temps pistolet",
+                      "Toutes catégories", graph=True),
+                unsafe_allow_html=True,
+            )
+
+    if vue == "Nombre":
+        with st.container(key="evol"):
+            evol = (
+                df.groupby(["Annee", "Sx"]).size().unstack(fill_value=0)
+                .reindex(columns=["Femme", "Homme"], fill_value=0)
+            )
+            evol["Total"] = df.groupby("Annee").size()  # inclut aussi le genre X
+            x = evol.index.astype(str)
+ 
+            fig = go.Figure()
+            for sexe, couleur, nom in (("Femme", TEAL, "Femmes"), ("Homme", ROUGE, "Hommes")):
+                fig.add_trace(go.Bar(
+                    x=x, y=evol[sexe], name=nom,
+                    marker=dict(
+                        color=couleur,line=dict(color="white", width=0)
+                    ),
+                    hovertemplate=f"{nom} : %{{y}} coureurs<extra></extra>",
+                ))
+            # Total au-dessus de chaque barre
+            fig.add_trace(go.Scatter(
+                x=x, y=evol["Total"], mode="text",
+                text=[f"{t:,}".replace(",", " ") for t in evol["Total"]],
+                textposition="top center", textfont=dict(color="white", size=14),
+                showlegend=False, hoverinfo="skip",
+            ))
+            fig.update_layout(
+                barmode="stack", height=340, margin=dict(l=10, r=10, t=10, b=10),showlegend=False,
+                plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="white"),
+                legend=dict(orientation="h", y=1.08, x=0, font=dict(color="white")),
+                xaxis=dict(type="category", showgrid=False, color="white"),
+                yaxis=dict(showticklabels=False, showgrid=False, zeroline=False,
+                           range=[0, evol["Total"].max() * 1.15]),
+                bargap=0.35,
+            )
+            st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
+    else:
+        with st.container(key="evol_pct"):
+            comptes = sel.groupby(["Annee", "Tranche"], observed=False).size().unstack(fill_value=0)
+            totaux = comptes.sum(axis=1).replace(0, 1)
+            pct = comptes.div(totaux, axis=0) * 100
+            x = [str(a) for a in comptes.index]
+ 
+            fig = go.Figure()
+            for k, lab in enumerate(etiquettes):
+                fig.add_trace(go.Bar(
+                    x=x, y=pct[lab], name=lab,
+                    marker=dict(color=PALETTE_TRANCHES[k % len(PALETTE_TRANCHES)],
+                                line=dict(color="rgba(15,43,48,.9)", width=1)),
+                    text=[f"{v:.0f}%" if v >= 5 else "" for v in pct[lab]],
+                    textposition="inside", insidetextanchor="middle", textangle=0,
+                    textfont=dict(color="#0F2B30" if 2 <= k <= 5 else "white", size=12),
+                    customdata=comptes[lab],
+                    hovertemplate=f"{lab}<br>%{{y:.1f}} % · %{{customdata}} coureurs<extra></extra>",
+                ))
+            fig.update_layout(
+                barmode="stack", height=460, margin=dict(l=10, r=10, t=10, b=10), bargap=0.25,
+                plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font=dict(color="white"),
+                legend=dict(traceorder="reversed", font=dict(color="white")),
+                xaxis=dict(type="category", showgrid=False, color="white"),
+                yaxis=dict(range=[0, 100], ticksuffix=" %", showgrid=False, zeroline=False, color="white"),
+            )
+            st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
+            
+    st.caption(f"Éditions {annees[0]} à {annees[-1]} · temps pistolet · abandons exclus des moyennes "
+            "et distributions · uniquement les coureurs individuels.")
+
+# ---------------------------------------------------------------------------
+# Onglet 2 : par édition
+# ---------------------------------------------------------------------------
+
+# ----------------------------------------------------------- Conteneur    
+with tab_edition:
  
     d = df[df["Annee"] == annee]
     arr = d[d["Temps_s"].notna()]
@@ -363,7 +618,6 @@ with tab_stats:
             unsafe_allow_html=True,
         )
  
-    st.write("")
     k3, k1, k2 = st.columns(3)
     kpi(k1, "🏁", "Participants", len(d), arr["Temps_s"].mean(), FOND)
     kpi(k2, "🏃", "Hommes", int((d["Sx"] == "Homme").sum()),
@@ -371,18 +625,29 @@ with tab_stats:
     kpi(k3, "🏃‍♀️", "Femmes", int((d["Sx"] == "Femme").sum()),
         arr.loc[arr["Sx"] == "Femme", "Temps_s"].mean(), TEAL)
     st.write("")
- 
-    # ----------------------------------------------------------------------------
-    # Podiums
-    # ----------------------------------------------------------------------------
-    zone_podiums = st.container()  # réservé AVANT les pastilles : s'affichera au-dessus
- 
+
+    # ---- Catégories (propres à l'édition choisie)
     cats = [c for c in ORDRE_CAT if c in set(d["Cat"])]
     cats += sorted(c for c in set(d["Cat"]) if c and c not in ORDRE_CAT)
-    choix = st.pills("", ["Scratch"] + cats, default="Scratch", key="pills_cat") or "Scratch"
+
+    with st.container(key="pills_cat"):
+        choix = st.pills("Catégorie", ["Scratch"] + cats, default="Scratch",
+                         key=f"pills_cat_{annee}", label_visibility="collapsed") or "Scratch"
+        
     dp = d if choix == "Scratch" else d[d["Cat"] == choix]
-    dp_arr = dp[dp["Temps_s"].notna()]  # arrivants de la sélection (graphiques)
+    dp_arr = dp[dp["Temps_s"].notna()]               # arrivants de la sélection
+    
+
+    nb = (pd.cut(dp_arr["Temps_s"] / 60, bins=[-float("inf")] + bornes + [float("inf")],
+                 labels=etiquettes, right=False)
+          .value_counts().reindex(etiquettes, fill_value=0))
+    part = nb / max(nb.sum(), 1) * 100
  
+    # ----------------------------------------------------------------------------
+    # Podiums pour l'édition
+    # ----------------------------------------------------------------------------
+    zone_podiums = st.container()  # réservé AVANT les pastilles : s'affichera au-dessus
+
     with zone_podiums:  # on remplit la zone une fois le choix connu
         p1, p2 = st.columns(2)
         for col, sexe, libelle, ico, coul in (
@@ -390,42 +655,15 @@ with tab_stats:
             (p2, "Homme", "Podium Hommes", ICO_H, ROUGE),
         ):
             col.markdown(
-                titre(ico, libelle, f"Édition {annee}", "Toutes catégories" if choix == "Scratch" else f"Catégorie {choix}", coul),
+                titre(ico, libelle, f"Édition {annee}", "Toutes catégories"),
                 unsafe_allow_html=True,
             )
             col.markdown(podium(dp, sexe), unsafe_allow_html=True)
-
-    # ----------------------------------------------------------------------------
-    # Préparation des tranches de temps (partagée par les graphiques de densité)
-    # ----------------------------------------------------------------------------
-    def fmt_h(m: int) -> str:
-        return f"{m // 60}h{m % 60:02d}"
- 
- 
-    bornes = list(range(TRANCHE_DEBUT, TRANCHE_FIN + 1, TRANCHE_PAS))
-    etiquettes = (
-        [f"< {fmt_h(bornes[0])}"]
-        + [f"{fmt_h(a)} – {fmt_h(b)}" for a, b in zip(bornes[:-1], bornes[1:])]
-        + [f"≥ {fmt_h(bornes[-1])}"]
-    )
-    PALETTE_TRANCHES = ["#2A8F9B", "#3AB5B0", "#6CC9A0", "#A8D67E", "#E6D45F", "#F2A94E",
-                        "#E8743B", "#C24247", "#8E3B6B", "#5B3A7A"]  # du plus rapide (bas) au plus lent (haut)
- 
     st.write("")
-    sel = df if choix == "Scratch" else df[df["Cat"] == choix]
-    sel = sel[sel["Temps_s"].notna()].copy()
-    sel["Tranche"] = pd.cut(
-        sel["Temps_s"] / 60, bins=[-float("inf")] + bornes + [float("inf")],
-        labels=etiquettes, right=False,
-    )
- 
+    
     # ----------------------------------------------------------------------------
-    # Distribution des temps (courbe) / densité par tranche de performance
+    # Graphiques distributions des temps Courbe/tranches
     # ----------------------------------------------------------------------------
-    sel_an = sel[sel["Annee"] == annee]
-    nb = sel_an["Tranche"].value_counts().reindex(etiquettes, fill_value=0)
-    part = nb / max(nb.sum(), 1) * 100
- 
     with st.container(key="distrib_head"):
         c_titre_d, c_vue_d = st.columns([3, 1], vertical_alignment="center")
         with c_vue_d:
@@ -448,6 +686,7 @@ with tab_stats:
                       + ("" if choix == "Scratch" else f" · {choix}"), graph=True),
                 unsafe_allow_html=True,
             )
+
     with st.container(key="distrib"):
         g_dist, g_donut_sex = st.columns([3.4, 1])
  
@@ -455,7 +694,7 @@ with tab_stats:
         lo = int(arr["Temps_s"].min() // pas * pas)
         hi = int(-(-arr["Temps_s"].max() // pas) * pas)
         grille = np.arange(lo, hi + 1, 30, dtype=float)
- 
+
         with g_dist:
             if vue_d == "Courbe":
                 fig = go.Figure()
@@ -508,102 +747,12 @@ with tab_stats:
             fig.update_layout(height=380, margin=dict(l=60, r=60, t=20, b=20),
                               paper_bgcolor="rgba(0,0,0,0)", font=dict(color="white"))
             st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
- 
-    # ----------------------------------------------------------------------------
-    # Zone à bascule : évolution du nombre de coureurs / évolution de la densité
-    # ----------------------------------------------------------------------------
-    st.write("")
-    with st.container(key="evol_head"):
-        c_titre, c_vue = st.columns([3, 1], vertical_alignment="center")
-        with c_vue:
-            vue = st.segmented_control(
-                "Graphique", ["Nombre", "Densité"], default="Nombre",
-                key="vue_evol", label_visibility="collapsed",
-            ) or "Nombre"
-        if vue == "Nombre":
-            c_titre.markdown(
-                titre("📶", "Évolution du nombre de coureurs",
-                      f"Éditions {annees[0]} à {annees[-1]}", f"{len(d):,} en {annee}".replace(",", " "), graph=True),
-                unsafe_allow_html=True,
-            )
-        else:
-            c_titre.markdown(
-                titre("🔎", "Évolution de la densité des coureurs",
-                      f"Part des arrivants par tranche de {TRANCHE_PAS} min · temps pistolet",
-                      "Toutes catégories" if choix == "Scratch" else f"Catégorie {choix}", graph=True),
-                unsafe_allow_html=True,
-            )
- 
-    if vue == "Nombre":
-        with st.container(key="evol"):
-            evol = (
-                df.groupby(["Annee", "Sx"]).size().unstack(fill_value=0)
-                .reindex(columns=["Femme", "Homme"], fill_value=0)
-            )
-            evol["Total"] = df.groupby("Annee").size()  # inclut aussi le genre « X »
-            x = evol.index.astype(str)
- 
-            fig = go.Figure()
-            for sexe, couleur, nom in (("Femme", TEAL, "Femmes"), ("Homme", ROUGE, "Hommes")):
-                fig.add_trace(go.Bar(
-                    x=x, y=evol[sexe], name=nom,
-                    marker=dict(
-                        color=couleur,
-                        line=dict(color="white", width=[2 if a == annee else 0 for a in evol.index]),
-                    ),
-                    hovertemplate=f"{nom} : %{{y}} coureurs<extra></extra>",
-                ))
-            # Total au-dessus de chaque barre
-            fig.add_trace(go.Scatter(
-                x=x, y=evol["Total"], mode="text",
-                text=[f"{t:,}".replace(",", " ") for t in evol["Total"]],
-                textposition="top center", textfont=dict(color="white", size=14),
-                showlegend=False, hoverinfo="skip",
-            ))
-            fig.update_layout(
-                barmode="stack", height=340, margin=dict(l=10, r=10, t=10, b=10),showlegend=False,
-                plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-                font=dict(color="white"),
-                legend=dict(orientation="h", y=1.08, x=0, font=dict(color="white")),
-                xaxis=dict(type="category", showgrid=False, color="white"),
-                yaxis=dict(showticklabels=False, showgrid=False, zeroline=False,
-                           range=[0, evol["Total"].max() * 1.15]),
-                bargap=0.35,
-            )
-            st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
-    else:
-        with st.container(key="evol_pct"):
-            comptes = sel.groupby(["Annee", "Tranche"], observed=False).size().unstack(fill_value=0)
-            totaux = comptes.sum(axis=1).replace(0, 1)
-            pct = comptes.div(totaux, axis=0) * 100
-            x = [str(a) for a in comptes.index]
- 
-            fig = go.Figure()
-            for k, lab in enumerate(etiquettes):
-                fig.add_trace(go.Bar(
-                    x=x, y=pct[lab], name=lab,
-                    marker=dict(color=PALETTE_TRANCHES[k % len(PALETTE_TRANCHES)],
-                                line=dict(color="rgba(15,43,48,.9)", width=1)),
-                    text=[f"{v:.0f}%" if v >= 5 else "" for v in pct[lab]],
-                    textposition="inside", insidetextanchor="middle", textangle=0,
-                    textfont=dict(color="#0F2B30" if 2 <= k <= 5 else "white", size=12),
-                    customdata=comptes[lab],
-                    hovertemplate=f"{lab}<br>%{{y:.1f}} % · %{{customdata}} coureurs<extra></extra>",
-                ))
-            fig.update_layout(
-                barmode="stack", height=460, margin=dict(l=10, r=10, t=10, b=10), bargap=0.25,
-                plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font=dict(color="white"),
-                legend=dict(traceorder="reversed", font=dict(color="white")),
-                xaxis=dict(type="category", showgrid=False, color="white"),
-                yaxis=dict(range=[0, 100], ticksuffix=" %", showgrid=False, zeroline=False, color="white"),
-            )
-            st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
- 
+            
     st.caption(f"Édition {annee}" + ("" if choix == "Scratch" else f" · catégorie {choix}") + f" · {len(dp_arr)} arrivants sur {len(dp)} partants · "
-               "temps pistolet · abandons exclus des moyennes et distributions.") 
+               "temps pistolet · abandons exclus des moyennes et distributions · uniquement les coureurs individuels.") 
 
 # ----------------------------------------------------------------------------
-# Onglet 2 : suivi individuel
+# Onglet 3 : suivi individuel
 # ----------------------------------------------------------------------------
 def normaliser(t: str) -> str:
     """Minuscules, sans accents ni tirets : 'Hélène-Marie' -> 'helene marie'."""
@@ -668,7 +817,6 @@ def graduations_temps(mini: float, maxi: float) -> tuple[list[float], list[str]]
 
 with tab_coureur:
     rc = preparer_coureurs()
-    st.write("")
     cle = None
     with st.container(key="recherche"):
         c_saisie, c_choix = st.columns(2, gap="medium", vertical_alignment="bottom")
