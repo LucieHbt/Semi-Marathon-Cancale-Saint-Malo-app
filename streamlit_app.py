@@ -1,6 +1,7 @@
-"""Données chronométriques : semi Cancale Saint-Malo 1989-226"""
+"""Données chronométriques : semi Cancale Saint-Malo 1989-2026"""
 from pathlib import Path
 from carte_pdf import generer_carte
+from html import escape
 
 import urllib.request
 import numpy as np
@@ -82,7 +83,7 @@ st.markdown(
       .hero {{ font-family:'Poppins',sans-serif; margin:6px 0 18px 0; display:flex; align-items:center; gap:20px; }}
       .hero .hero-logo {{ height:84px; width:auto; flex:none; filter:drop-shadow(0 2px 10px rgba(0,0,0,.35)); }}
 
-      .hero .kicker {{ color:"white"; font-size:.78rem; font-weight:600; letter-spacing:.22em;
+      .hero .kicker {{ color:#fff; font-size:.78rem; font-weight:600; letter-spacing:.22em;
                        text-transform:uppercase; display:flex; align-items:center; gap:10px; }}
       .hero .h {{ color:#fff; font-size:2.5rem; font-weight:800; line-height:1.1; margin-top:6px;
                   text-shadow:0 2px 14px rgba(0,0,0,.45); }}
@@ -153,7 +154,6 @@ st.markdown(
       .titre.graph {{ box-shadow:inset 0 -3px 0 #fff; }}
       .st-key-evol_head .titre.graph, .st-key-distrib_head .titre.graph {{ box-shadow:none; }}
       
-      @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,600;1,800&display=swap');
       .pod-wrap {{ display:flex; align-items:flex-end; gap:14px; padding:22px 14px 16px 14px;
                    background:rgba(15,43,48,.62); backdrop-filter:blur(4px);
                    border-radius:0 0 10px 10px; min-height:340px; box-sizing:border-box;
@@ -223,11 +223,6 @@ st.markdown(
       .st-key-export_carte {{ display:none !important; }}
       .stApp:has(.stTabs [role="tab"][data-key="2"][aria-selected="true"]) .st-key-export_carte {{ display:flex !important; }}
 
-      /* visible uniquement sur l'onglet "Suivi individuel" */
-      .tbl-suivi {{ width:100%; border-collapse:collapse; background:#fff; border-radius:0 0 10px 10px;
-                    overflow:hidden; font-family:'Poppins',sans-serif; font-size:.85rem; }}
-      .tbl-suivi th {{ background:#eef3f4; color:#0B3A4F; text-align:left; padding:8px 12px; font-weight:700; }}
-      .tbl-suivi td {{ color:#0B3A4F; padding:7px 12px; border-top:1px solid #e6ecee; }}
     </style>
     """,
     unsafe_allow_html=True,
@@ -326,6 +321,20 @@ def densite(t: pd.Series, grille: np.ndarray, bw: float) -> np.ndarray:
         return np.zeros_like(grille)
     z = (grille[:, None] - t[None, :]) / bw
     return np.exp(-0.5 * z**2).sum(axis=1) / (bw * np.sqrt(2 * np.pi)) * 60
+
+MEDAILLES_RANG = {1: "🥇", 2: "🥈", 3: "🥉"}
+
+def nom_affiche(n: str) -> str:
+    """'NOM Prénom' → 'Prénom Nom' (échappé pour le HTML)."""
+    try:
+        nom, prenom = split_nom(n)
+        return escape(f"{prenom} {nom}".strip())
+    except Exception:
+        return escape(str(n))
+
+def sx_html(s: str) -> str:
+    return {"Homme": "<span class='sx-h'>♂ H</span>",
+            "Femme": "<span class='sx-f'>♀ F</span>"}.get(s, escape(str(s)))
  
 df = charger()
 annees = sorted(df["Annee"].unique())
@@ -598,10 +607,62 @@ with tab_stats:
     st.caption(f"Éditions {annees[0]} à {annees[-1]} · temps pistolet · abandons exclus des moyennes "
             "et distributions · uniquement les coureurs individuels.")
 
+    # ----------------------------------------------------------------------------
+    # Classement des individus par participations (toutes éditions)
+    # ----------------------------------------------------------------------------
+    # Meilleur temps par coureur + année associée (parmi les arrivants avec temps)
+    best_temps = (
+        df[df["Temps_s"].notna()].sort_values("Temps_s")
+        .groupby("Nom")[["Temps_s", "Annee"]].first()
+    )
+    classement = (
+        pd.concat([nb_editions, best_temps, sexe_ref], axis=1).reset_index()
+        .sort_values(["Nb_editions", "Temps_s"], ascending=[False, True])
+        .reset_index(drop=True)
+    )
+    classement["Rang"] = (
+        classement["Nb_editions"].rank(method="min", ascending=False).astype(int)
+    )
+
+    vue = pd.DataFrame({
+        "#":              classement["Rang"],
+        "Coureur":        classement["Nom"].map(nom_affiche),
+        "Sexe":           classement["Sx_ref"]
+                              .map({"Homme": "♂ H", "Femme": "♀ F"})
+                              .fillna(""),
+        "Éditions":       classement["Nb_editions"].astype(int),
+        "Meilleur temps": classement["Temps_s"]
+                              .map(lambda t: hms(t) if pd.notna(t) else "–"),
+        "Année":          classement["Annee"]
+                              .map(lambda a: int(a) if pd.notna(a) else "–"),
+    })
+
+    st.markdown(
+        titre("🎽", "Classement par participations", "Toutes éditions",
+              "Nombre d'éditions", FOND, graph=True),
+        unsafe_allow_html=True,
+    )
+    st.dataframe(
+        vue,
+        hide_index=True,
+        width="stretch",
+        height=520,
+        column_config={
+            "#":              st.column_config.NumberColumn(width="small"),
+            "Coureur":        st.column_config.TextColumn(width="medium"),
+            "Sexe":           st.column_config.TextColumn(width="small"),
+            "Éditions":       st.column_config.NumberColumn(width="small"),
+            "Meilleur temps": st.column_config.TextColumn(width="small"),
+            "Année":          st.column_config.NumberColumn(width="small"),
+        },
+    )
+    st.caption(
+        f"{len(classement):,} coureurs · "
+        "les ex æquo partagent le même rang.".replace(",", " ")
+    )
 # ---------------------------------------------------------------------------
 # Onglet 2 : par édition
 # ---------------------------------------------------------------------------
-
 # ----------------------------------------------------------- Conteneur    
 with tab_edition:
  
@@ -750,6 +811,39 @@ with tab_edition:
             
     st.caption(f"Édition {annee}" + ("" if choix == "Scratch" else f" · catégorie {choix}") + f" · {len(dp_arr)} arrivants sur {len(dp)} partants · "
                "temps pistolet · abandons exclus des moyennes et distributions · uniquement les coureurs individuels.") 
+
+    # ----------------------------------------------------------------------------
+    # Classement des individus de l'édition sélectionnée
+    # ----------------------------------------------------------------------------
+    ed = dp_arr.sort_values("Temps_s").reset_index(drop=True)
+    rangs = ed["Temps_s"].rank(method="min").astype(int)
+
+    vue = pd.DataFrame({
+        "#":        [MEDAILLES_RANG.get(rg, rg) for rg in rangs],
+        "Coureur":  ed["Nom"].map(nom_affiche),
+        "Sexe":     ed["Sx"].map({"Homme": "♂ H", "Femme": "♀ F"}).fillna(""),
+        "Catégorie": ed["Cat"].fillna("").astype(str),
+        "Temps":    ed["Temps_s"].map(lambda t: hms(t) if pd.notna(t) else "–"),
+    })
+
+    st.markdown(
+        titre("📋", f"Classement {choix}", f"Édition {annee}",
+              f"{len(ed):,} arrivants".replace(",", " "), FOND, graph=True),
+        unsafe_allow_html=True,
+    )
+    st.dataframe(
+        vue,
+        hide_index=True,
+        width="stretch",
+        height=520,
+        column_config={
+            "#":         st.column_config.TextColumn(width="small"),
+            "Coureur":   st.column_config.TextColumn(width="medium"),
+            "Sexe":      st.column_config.TextColumn(width="small"),
+            "Catégorie": st.column_config.TextColumn(width="small"),
+            "Temps":     st.column_config.TextColumn(width="small"),
+        },
+    )
 
 # ----------------------------------------------------------------------------
 # Onglet 3 : suivi individuel
@@ -940,17 +1034,38 @@ with tab_coureur:
                        "Les éditions sans point correspondent à une absence ou à un abandon.")
  
         with col_d:
-            # --- détail par édition ---
-            st.markdown(titre("📋", "Détail par édition", "Vos performances","", couleur=coul_sexe), unsafe_allow_html=True)
-            lignes = "".join(
-                f"<tr><td><b>{int(r.Annee)}</b></td><td>{hms(r.Temps_s) if pd.notna(r.Temps_s) else 'Abandon (DNF)'}</td>"
-                f"<td>{'' if pd.isna(r.Place_gen) else f'{int(r.Place_gen)}e'}</td>"
-                f"<td>{'' if pd.isna(r.Place) else f'{int(r.Place)}e'}</td>"
-                f"<td>{r.Cat or ''}</td><td>{'🥇🥈🥉'[int(r.Medaille) - 1] if pd.notna(r.Medaille) else ''}</td></tr>"
-                for r in c.itertuples()
-            )
+            vue = pd.DataFrame({
+                "Édition": c["Annee"].astype(int).astype(str),
+                "Temps":   c["Temps_s"].map(
+                    lambda t: hms(t) if pd.notna(t) else "Abandon (DNF)"
+                ),
+                "Scratch": c["Place_gen"].map(
+                    lambda p: "" if pd.isna(p) else f"{int(p)}e"
+                ),
+                "Sexe":    c["Place"].map(
+                    lambda p: "" if pd.isna(p) else f"{int(p)}e"
+                ),
+                "Cat.":    c["Cat"].fillna("").astype(str),
+                "🏅":      c["Medaille"].map(
+                    lambda m: "🥇🥈🥉"[int(m) - 1] if pd.notna(m) else ""
+                ),
+            })
+
             st.markdown(
-                "<table class='tbl-suivi'><tr><th>Édition</th><th>Temps</th><th>Scratch</th>"
-                f"<th>Sexe</th><th>Cat.</th><th></th></tr>{lignes}</table>",
+                titre("📎", "Détail par édition", "Vos performances",
+                      "", coul_sexe, graph=True),
                 unsafe_allow_html=True,
+            )
+            st.dataframe(
+                vue,
+                hide_index=True,
+                width="stretch",
+                column_config={
+                    "Édition": st.column_config.TextColumn(width="small"),
+                    "Temps":   st.column_config.TextColumn(width="small"),
+                    "Scratch": st.column_config.TextColumn(width="small"),
+                    "Sexe":    st.column_config.TextColumn(width="small"),
+                    "Cat.":    st.column_config.TextColumn(width="small"),
+                    "🏅":      st.column_config.TextColumn(width="small"),
+                },
             )
