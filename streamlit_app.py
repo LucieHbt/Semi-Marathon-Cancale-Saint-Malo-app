@@ -9,6 +9,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import re
 import unicodedata
+import html
 import streamlit as st
 
 DATA = Path(__file__).parent / "data" / "resultats.csv"
@@ -56,7 +57,7 @@ st.markdown(
       .st-key-annees [data-testid="stSelectbox"] [data-baseweb="select"] > div,
       .st-key-annees [data-testid="stSelectbox"] .react-aria-ComboBox > div {{ background:#fff !important; border:0 !important; border-radius:999px; min-height:36px; align-items:center; }}
       .st-key-annees [data-testid="stSelectbox"] * {{ color:{FOND} !important; font-weight:800; }}
-      .st-key-annees [data-testid="stSelectbox"] button {{ background:transparent !important; box-shadow:none !important; border:0 !important; border-radius:0 !important; width:32px; height:100%; min-height:0; padding:0; display:flex; align-items:center; justify-content:center; }}
+      .st-key-annees [data-testid="stSelectbox"] button {{ background:transparent !important; box-shadoborderw:none !important; border:0 !important; border-radius:0 !important; width:32px; height:100%; min-height:0; padding:0; display:flex; align-items:center; justify-content:center; }}
       
       @media (max-width:640px) {{
         .st-key-annees {{ margin-bottom:0; justify-content:flex-start; pointer-events:auto; }}
@@ -104,7 +105,8 @@ st.markdown(
       .st-key-evol_head button[role="radio"]:hover * {{ color:#fff !important; }}
       .st-key-evol_head button[role="radio"][aria-checked="true"] {{ background:#fff !important; }}
       .st-key-evol_head button[role="radio"][aria-checked="true"] * {{ color:{FOND} !important; font-weight:700; }}
-      .st-key-distrib_head {{ background:rgba(15,43,48,.92); backdrop-filter:blur(4px); border-radius:12px 12px 0 0;
+
+      .st-key-distrib_head {{ background:rgba(15,43,48,.92); backdrop-filter:blur(4px); -radius:12px 12px 0 0;
                            padding:10px 16px 15px 16px; margin-bottom:-1rem; box-shadow:inset 0 -3px 0 #fff; }}
       .st-key-distrib_head .titre {{ background:none; box-shadow:none; backdrop-filter:none; padding:0; border-radius:0; }}
       .st-key-distrib_head [data-testid="stHorizontalBlock"] {{ align-items:center; }}
@@ -119,6 +121,45 @@ st.markdown(
       .st-key-distrib_head button[role="radio"]:hover * {{ color:#fff !important; }}
       .st-key-distrib_head button[role="radio"][aria-checked="true"] {{ background:#fff !important; }}
       .st-key-distrib_head button[role="radio"][aria-checked="true"] * {{ color:{FOND} !important; font-weight:700; }}
+      
+      /* --- carte verre --- */
+      .st-key-perf {{
+            background:linear-gradient(180deg, rgba(15,43,48,.62), rgba(15,43,48,.36));
+            backdrop-filter:blur(4px); border-radius:14px; border:1px solid rgba(255,255,255,.14);
+            box-shadow:0 10px 30px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.08);
+            gap:0 !important; padding:0 0 15px 0; }}
+      .st-key-perf_head {{ background:rgba(15,43,48,.92); border-radius:14px 14px 0 0;
+            padding:12px 20px 16px 20px; margin:0; box-shadow:inset 0 -3px 0 #fff; }}
+      .st-key-perf_head .titre {{ background:none; box-shadow:none; backdrop-filter:none; padding:0; border-radius:0; }}
+
+      /* corps : respiration autour du graphique et du tableau */
+      .st-key-perf [data-testid="stHorizontalBlock"]:not(.st-key-perf_head *) {{
+            padding:1px 20px 0 20px; align-items:center; }}
+
+      /* graphique transparent */
+      .st-key-perf [data-testid="stPlotlyChart"], .st-key-perf [data-testid="stPlotlyChart"] .js-plotly-plot,
+      .st-key-perf [data-testid="stPlotlyChart"] .plot-container, .st-key-perf [data-testid="stPlotlyChart"] .main-svg {{
+            background:transparent !important; }}
+      .st-key-perf [data-testid="stPlotlyChart"] .main-svg .bg {{ fill:transparent !important; }}
+
+      /* tableau en verre */
+      .st-key-perf .perf-wrap {{ max-height:380px; overflow-y:auto; padding-right:4px;
+            scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.3) transparent; }}
+      .st-key-perf .perf-table {{ width:100%; border-collapse:separate !important; border-spacing:0 6px;
+            font-size:.92rem; color:#fff; margin:0; }}
+      .st-key-perf .perf-table th {{ border:0 !important; background:transparent !important; text-align:left;
+            font-size:.68rem; letter-spacing:.09em; text-transform:uppercase; font-weight:600;
+            color:rgba(255,255,255,.55); padding:0 12px 2px 12px; position:sticky; top:0; }}
+      .st-key-perf .perf-table td {{ border:0 !important; background:rgba(255,255,255,.07) !important;
+            padding:9px 12px; transition:background .15s; }}
+      .st-key-perf .perf-table td:first-child {{ border-radius:10px 0 0 10px; font-weight:700; }}
+      .st-key-perf .perf-table td:last-child  {{ border-radius:0 10px 10px 0; text-align:center; }}
+      .st-key-perf .perf-table tr:hover td {{ background:rgba(255,255,255,.14) !important; }}
+      .st-key-perf .perf-table .t {{ font-variant-numeric:tabular-nums; font-weight:700; }}
+      .st-key-perf .perf-table tr.best td {{ background:rgba(255,193,7,.17) !important; }}
+      .st-key-perf .perf-table tr.best td:first-child {{ box-shadow:inset 3px 0 0 #FFC107; }}
+      .st-key-perf .perf-table tr.dnf td {{ color:rgba(255,255,255,.5); font-style:italic; }}
+
       .st-key-evol, .st-key-evol_pct, .st-key-evol_pct_an {{ background:rgba(15,43,48,.62); backdrop-filter:blur(4px);
             border-radius:0 0 12px 12px; padding:10px 14px 6px 14px; }}
       .st-key-evol div[data-testid="stPlotlyChart"],
@@ -139,6 +180,14 @@ st.markdown(
             background:rgba(255,255,255,.22) !important; border:1px solid #fff !important; }}
       .st-key-pills_cat button[role="radio"][aria-checked="true"] * {{ color:#fff !important; font-weight:700; }}
       
+      /* l'icône ? elle-même */
+      [data-testid="stTooltipIcon"] svg {{color: #fff !important; fill: #fff !important;}}
+      /* hover */
+      [data-testid="stTooltipIcon"]:hover svg {{color: {TEAL} !important;fill: {TEAL} !important;}}
+      /* l'icône ? d'un st.markdown avec help, uniquement dans la colonne de gauche */
+      .st-key-suivi ~ div [data-testid="stTooltipIcon"], div[data-testid="stMarkdownContainer"] + [data-testid="stTooltipIcon"] {{
+          margin-top: -38px; margin-left: auto; margin-right: 8px; z-index: 2;position: relative;}}
+        
       .titre {{ display:flex; align-items:center; gap:12px; background:rgba(15,43,48,.92);
                 backdrop-filter:blur(4px); border-radius:12px 12px 0 0; padding:9px 16px;
                 box-shadow:inset 0 -3px 0 var(--c); font-family:'Poppins',sans-serif; }}
@@ -521,6 +570,14 @@ with tab_stats:
     # ----------------------------------------------------------------------------
     with st.container(key="evol_head"):
         c_titre, c_vue = st.columns([3, 1], vertical_alignment="center")
+
+        info_caption1 = (
+            f"**Éditions {annees[0]} à {annees[-1]}**  \n"
+            "Temps officiel  \n"
+            "Abandons exclus des moyennes et distributions  \n"
+            "Uniquement les coureurs individuels."
+        )
+
         with c_vue:
             vue = st.segmented_control(
                 "Graphique", ["Nombre", "Densité"], default="Nombre",
@@ -530,14 +587,14 @@ with tab_stats:
             c_titre.markdown(
                 titre("📶", "Évolution du nombre de coureurs",
                       f"Éditions {annees[0]} à {annees[-1]}", f"{len(df):,} participations".replace(",", " "), graph=True),
-                unsafe_allow_html=True,
+                unsafe_allow_html=True, help=info_caption1,
             )
         else:
             c_titre.markdown(
                 titre("🔎", "Évolution de la densité des coureurs",
-                      f"Part des arrivants par tranche de {TRANCHE_PAS} min · temps pistolet",
+                      f"Part des arrivants par tranche de {TRANCHE_PAS} min",
                       "Toutes catégories", graph=True),
-                unsafe_allow_html=True,
+                unsafe_allow_html=True, help=info_caption1,
             )
 
     if vue == "Nombre":
@@ -603,9 +660,6 @@ with tab_stats:
                 yaxis=dict(range=[0, 100], ticksuffix=" %", showgrid=False, zeroline=False, color="white"),
             )
             st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
-            
-    st.caption(f"Éditions {annees[0]} à {annees[-1]} · temps pistolet · abandons exclus des moyennes "
-            "et distributions · uniquement les coureurs individuels.")
 
     # ----------------------------------------------------------------------------
     # Classement des individus par participations (toutes éditions)
@@ -716,7 +770,7 @@ with tab_edition:
             (p2, "Homme", "Podium Hommes", ICO_H, ROUGE),
         ):
             col.markdown(
-                titre(ico, libelle, f"Édition {annee}", "Toutes catégories"),
+                titre(ico, libelle, f"Édition {annee}", "Toutes catégories", coul),
                 unsafe_allow_html=True,
             )
             col.markdown(podium(dp, sexe), unsafe_allow_html=True)
@@ -727,25 +781,36 @@ with tab_edition:
     # ----------------------------------------------------------------------------
     with st.container(key="distrib_head"):
         c_titre_d, c_vue_d = st.columns([3, 1], vertical_alignment="center")
+        info_caption2 = (
+            f"**Édition {annee}**"
+            + ("" if choix == "Scratch" else f" · catégorie **{choix}**")
+            + f"  \n{len(dp_arr)} arrivants sur {len(dp)} partants  \n"
+            "Temps officiel  \n"
+            "Abandons exclus des moyennes et distributions  \n"
+            "Uniquement les coureurs individuels."
+            )
         with c_vue_d:
             vue_d = st.segmented_control(
                 "Distribution", ["Courbe", "Tranches"], default="Courbe",
                 key="vue_distrib", label_visibility="collapsed",
             ) or "Courbe"
+
         if vue_d == "Courbe":
             c_titre_d.markdown(
                 titre("📈", "Distribution des temps officiels",
-                      f"Édition {annee} · temps pistolet" + ("" if choix == "Scratch" else f" · catégorie {choix}"),
-                      f"{len(dp_arr):,} arrivants".replace(",", " "), graph=True),
+                    f"Édition {annee}" + ("" if choix == "Scratch" else f" · catégorie {choix}"),
+                    f"{len(dp_arr):,} arrivants".replace(",", " "), graph=True),
                 unsafe_allow_html=True,
+                help=info_caption2,
             )
         else:
             c_titre_d.markdown(
                 titre("📊", "Densité des coureurs par tranche de performance",
-                      f"Édition {annee} · tranches de {TRANCHE_PAS} min · temps pistolet",
-                      f"{int(nb.sum()):,} arrivants".replace(",", " ")
-                      + ("" if choix == "Scratch" else f" · {choix}"), graph=True),
+                    f"Édition {annee} · tranches de {TRANCHE_PAS} min",
+                    f"{int(nb.sum()):,} arrivants".replace(",", " ")
+                    + ("" if choix == "Scratch" else f" · {choix}"), graph=True),
                 unsafe_allow_html=True,
+                help=info_caption2,
             )
 
     with st.container(key="distrib"):
@@ -809,9 +874,6 @@ with tab_edition:
                               paper_bgcolor="rgba(0,0,0,0)", font=dict(color="white"))
             st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
             
-    st.caption(f"Édition {annee}" + ("" if choix == "Scratch" else f" · catégorie {choix}") + f" · {len(dp_arr)} arrivants sur {len(dp)} partants · "
-               "temps pistolet · abandons exclus des moyennes et distributions · uniquement les coureurs individuels.") 
-
     # ----------------------------------------------------------------------------
     # Classement des individus de l'édition sélectionnée
     # ----------------------------------------------------------------------------
@@ -899,7 +961,6 @@ def fiche_kpi(col, icone, label, valeur, detail, couleur):
         unsafe_allow_html=True,
     )
  
- 
 def graduations_temps(mini: float, maxi: float) -> tuple[list[float], list[str]]:
     """Graduations du graphique, toutes les 5 min (10 min si l'amplitude est grande)"""
     pas = 300 if (maxi - mini) < 3600 else 600
@@ -908,10 +969,15 @@ def graduations_temps(mini: float, maxi: float) -> tuple[list[float], list[str]]
     return vals, [f"{v // 3600}h{v % 3600 // 60:02d}" for v in vals]
  
 # ----------------------------------------------------------------------------
+@st.cache_data(show_spinner=False)
+def carte_pdf(**kw):
+    return generer_carte(**kw)
 
 with tab_coureur:
     rc = preparer_coureurs()
     cle = None
+
+    # --- recherche ---
     with st.container(key="recherche"):
         c_saisie, c_choix = st.columns(2, gap="medium", vertical_alignment="bottom")
         with c_saisie:
@@ -922,7 +988,7 @@ with tab_coureur:
         mots = normaliser(saisie).split()
         with c_choix:
             if len(mots) == 0:
-                st.caption("🔎 Saisissez votre nom (2 lettres minimum) pour retrouver vos résultats depuis 2022.")
+                st.caption(f"🔎 Saisissez votre nom (2 lettres minimum) pour retrouver vos résultats depuis {int(rc['Annee'].min())}.")
             elif sum(len(m) for m in mots) < 2:
                 st.caption("Saisissez au moins 2 lettres.")
             else:
@@ -940,26 +1006,32 @@ with tab_coureur:
                            for r in trouves.head(50).itertuples()}
                     cle = st.selectbox(
                         f"{len(trouves)} correspondances" + (" (50 premières affichées)" if len(trouves) > 50 else ""),
-                        list(lib), format_func=lib.get, index=None, placeholder="Choisissez votre nom dans la liste",
+                        list(lib), format_func=lib.get, index=None,
+                        placeholder="Choisissez votre nom dans la liste", key="choix_coureur",
                     )
- 
+
+    # --- fiche coureur ---
     if cle:
         c = rc[rc["Cle"] == cle].sort_values("Annee")
         arr_c = c[c["Temps_s"].notna()]
         nom, prenom = split_nom(c["Nom"].iloc[-1])
-        club = c.loc[c["Club"] != "", "Club"].iloc[-1] if (c["Club"] != "").any() else ""
+        clubs = c["Club"].fillna("").astype(str)
+        club = clubs[clubs != ""].iloc[-1] if (clubs != "").any() else ""
+        sexe = c["Sx"].iloc[0]
+        coul_sexe = ROUGE if sexe == "Homme" else TEAL   # Homme = rouge, Femme = teal
+
         st.markdown(
-            f"<div class='fiche'><div class='n'>{prenom} {nom}</div>"
-            f"<div class='m'>{c['Sx'].iloc[0]}" + (f" · {club}" if club else "") + "</div></div>",
+            f"<div class='fiche'><div class='n'>{html.escape(str(prenom))} {html.escape(str(nom))}</div>"
+            f"<div class='m'>{html.escape(str(sexe))}" + (f" · {html.escape(club)}" if club else "") + "</div></div>",
             unsafe_allow_html=True,
         )
         st.write("")
- 
-        coul_sexe = ROUGE if c["Sx"].iloc[0] == "Homme" else TEAL   # Homme = rouge, Femme = teal
+
+        # --- KPI ---
         nb_ed = c["Annee"].nunique()
         k1, k2, k3 = st.columns(3)
         fiche_kpi(k1, "🏁", "Éditions courues", nb_ed,
-                  ", ".join(str(a) for a in c["Annee"]), FOND)
+                  ", ".join(str(int(a)) for a in c["Annee"]), FOND)
         if arr_c.empty:
             fiche_kpi(k2, "⏱️", "Meilleur temps", "-", "aucun temps enregistré", coul_sexe)
         else:
@@ -972,25 +1044,39 @@ with tab_coureur:
         fiche_kpi(k3, "🏅", "Médailles", n_med, detail, OR)
 
         st.write("")
-        
-        pdf = generer_carte(
-            prenom=prenom, nom=nom, sexe=c["Sx"].iloc[0], club=club,
+
+        # --- carte récap PDF (mise en cache) ---
+        pdf = carte_pdf(
+            prenom=prenom, nom=nom, sexe=sexe, club=club,
             annees=[int(x) for x in annees],
             resultats=[(int(r.Annee), None if pd.isna(r.Temps_s) else float(r.Temps_s)) for r in c.itertuples()],
-            couleur=coul_sexe, medailles={int(k): int(v) for k, v in med.items()}, logo=logo_event(), fond=fond_event(),
+            couleur=coul_sexe, medailles={int(k): int(v) for k, v in med.items()},
+            logo=logo_event(), fond=fond_event(),
         )
         slug = re.sub(r"[^a-z0-9]+", "_", normaliser(f"{prenom} {nom}")).strip("_")
         with zone_export:
             st.download_button("🃏 Télécharger ma carte récap (PDF)", pdf,
-                file_name=f"carte_recap_{slug}.pdf", mime="application/pdf", key="dl_carte")
-             
-        col_g, col_d = st.columns([1.75, 1], gap="medium")
-        with col_g:
-            # --- évolution des temps ---
-            st.markdown(titre("📈", "Évolution de vos performances", "Temps pistolet par édition",
-                              f"{len(arr_c)} chrono{'s' if len(arr_c) > 1 else ''}", couleur=coul_sexe),
-                        unsafe_allow_html=True)
-            with st.container(key="suivi"):
+                               file_name=f"carte_recap_{slug}.pdf", mime="application/pdf", key="dl_carte")
+
+        # --- évolution des performances ---
+        with st.container(key="perf"):
+            with st.container(key="perf_head"):
+                c_titre_p, _ = st.columns([3, 1], vertical_alignment="center")
+                info_caption3 = (
+                    "⭐**Point doré = meilleur temps**  \n"
+                    "Plus le point est bas, plus vous avez été rapide  \n"
+                    "Les éditions sans point correspondent à une absence ou à un abandon"
+                )
+                c_titre_p.markdown(
+                    titre("📈", "Évolution de vos performances", "Temps officiel par édition",
+                          f"{len(arr_c)} chrono{'s' if len(arr_c) > 1 else ''}",
+                          couleur=coul_sexe, graph=True),
+                    unsafe_allow_html=True, help=info_caption3,
+                )
+
+            g_perf, g_detail = st.columns([1.75, 1], gap="medium", vertical_alignment="center")
+
+            with g_perf:
                 if arr_c.empty:
                     st.write("Aucun temps à afficher.")
                 else:
@@ -998,23 +1084,27 @@ with tab_coureur:
                     marge = max(120, (y.max() - y.min()) * 0.25)
                     vals, txt = graduations_temps(y.min() - marge, y.max() + marge)
                     ib = int(np.argmin(y))
-                    biseau = len(y) > 8          # beaucoup d'éditions → texte incliné
+                    biseau = len(y) > 8
                     fig = go.Figure(go.Scatter(
-                        x=arr_c["Annee"].astype(str), y=y,
+                        x=arr_c["Annee"].astype(int).astype(str), y=y,
                         mode="lines+markers" if biseau else "lines+markers+text",
                         line=dict(color=coul_sexe, width=3),
                         marker=dict(size=[16 if k == ib else 10 for k in range(len(y))],
                                     color=[OR if k == ib else coul_sexe for k in range(len(y))],
                                     line=dict(color="white", width=2)),
-                        text=[hms(v) for v in y], textposition="top center", textfont=dict(color="white", size=13),
-                        customdata=np.c_[[hms(v) for v in y], arr_c["Place_gen"].to_numpy(), arr_c["Place"].to_numpy()],
+                        text=[hms(v) for v in y], textposition="top center",
+                        textfont=dict(color="white", size=13),
+                        customdata=np.c_[[hms(v) for v in y],
+                                         arr_c["Place_gen"].to_numpy(),
+                                         arr_c["Place"].to_numpy()],
                         hovertemplate="%{x}<br>%{customdata[0]}<br>%{customdata[1]:.0f}e au scratch"
-                                      "<br>%{customdata[2]:.0f}e " + c["Sx"].iloc[0].lower() + "<extra></extra>",
+                                      "<br>%{customdata[2]:.0f}e " + sexe.lower()
+                                      + "<extra></extra>",
                         cliponaxis=False,
                     ))
                     if biseau:
                         fig.update_layout(annotations=[
-                            dict(x=list(annees).index(a), y=v, text=hms(v), showarrow=False,
+                            dict(x=str(int(a)), y=v, text=hms(v), showarrow=False,
                                  textangle=-60, xanchor="left", yanchor="bottom",
                                  xshift=-2, yshift=10,
                                  font=dict(color="white", size=12))
@@ -1022,50 +1112,31 @@ with tab_coureur:
                         ])
                     fig.update_layout(
                         height=380, margin=dict(l=10, r=20, t=60 if biseau else 30, b=10),
-                        plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font=dict(color="white"),
-                        xaxis=dict(type="category", categoryorder="array", categoryarray=[str(a) for a in annees],
+                        plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                        font=dict(color="white"),
+                        xaxis=dict(type="category", categoryorder="array",
+                                   categoryarray=[str(int(a)) for a in annees],
                                    showgrid=False, color="white",
-                                   tickangle=-45 if biseau else 0),
-                        yaxis=dict(tickvals=vals, ticktext=txt, range=[vals[0], vals[-1]], showgrid=True,
-                                   gridcolor="rgba(255,255,255,.12)", zeroline=False, color="white")
+                                   tickangle=-45 if biseau else 0, automargin=True),
+                        yaxis=dict(tickvals=vals, ticktext=txt,
+                                   range=[vals[0], vals[-1]],
+                                   showgrid=True, gridcolor="rgba(255,255,255,.12)",
+                                   zeroline=False, color="#fff", automargin=True),
                     )
-                    st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
-            st.caption("⭐ Point doré = meilleur temps. Plus le point est bas, plus vous avez été rapide. "
-                       "Les éditions sans point correspondent à une absence ou à un abandon.")
- 
-        with col_d:
-            vue = pd.DataFrame({
-                "Édition": c["Annee"].astype(int).astype(str),
-                "Temps":   c["Temps_s"].map(
-                    lambda t: hms(t) if pd.notna(t) else "Abandon (DNF)"
-                ),
-                "Scratch": c["Place_gen"].map(
-                    lambda p: "" if pd.isna(p) else f"{int(p)}e"
-                ),
-                "Sexe":    c["Place"].map(
-                    lambda p: "" if pd.isna(p) else f"{int(p)}e"
-                ),
-                "Cat.":    c["Cat"].fillna("").astype(str),
-                "🏅":      c["Medaille"].map(
-                    lambda m: "🥇🥈🥉"[int(m) - 1] if pd.notna(m) else ""
-                ),
-            })
+                    st.plotly_chart(fig, width="stretch", theme=None,
+                                    config={"displayModeBar": False})
 
-            st.markdown(
-                titre("📎", "Détail par édition", "Vos performances",
-                      "", coul_sexe, graph=True),
-                unsafe_allow_html=True,
-            )
-            st.dataframe(
-                vue,
-                hide_index=True,
-                width="stretch",
-                column_config={
-                    "Édition": st.column_config.TextColumn(width="small"),
-                    "Temps":   st.column_config.TextColumn(width="small"),
-                    "Scratch": st.column_config.TextColumn(width="small"),
-                    "Sexe":    st.column_config.TextColumn(width="small"),
-                    "Cat.":    st.column_config.TextColumn(width="small"),
-                    "🏅":      st.column_config.TextColumn(width="small"),
-                },
-            )
+            with g_detail:
+                vue = pd.DataFrame({
+                    "Édition": c["Annee"].astype(int).astype(str),
+                    "Temps":   c["Temps_s"].map(lambda t: hms(t) if pd.notna(t) else "Abandon (DNF)"),
+                    "Scratch": c["Place_gen"].map(lambda p: "" if pd.isna(p) else f"{int(p)}e"),
+                    "Sexe":    c["Place"].map(lambda p: "" if pd.isna(p) else f"{int(p)}e"),
+                    "Cat.":    c["Cat"].fillna("").astype(str),
+                    "🏅":      c["Medaille"].map(lambda m: "🥇🥈🥉"[int(m) - 1] if pd.notna(m) else ""),
+                })
+                st.dataframe(
+                    vue, hide_index=True, width="stretch",
+                    column_config={k: st.column_config.TextColumn(width="small")
+                                   for k in vue.columns},
+                )
