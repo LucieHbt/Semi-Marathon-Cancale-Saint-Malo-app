@@ -1,34 +1,43 @@
 # ⏱️ Semi-Marathon de Cancale Saint-Malo · Statistiques
 
-Tableau de bord interactif des résultats chronométriques du semi-marathon de Cancale Saint-Malo, réalisé avec [Streamlit](https://streamlit.io).
+Tableau de bord interactif des résultats chronométriques du semi-marathon de Cancale Saint-Malo (éditions 1989 à 2026), réalisé avec [Streamlit](https://streamlit.io).
 
-> [Lien vers le dashboard](https://statistiques-semi-cancale-saint-malo.streamlit.app/)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://statistiques-semi-cancale-saint-malo.streamlit.app/)
 
 ## Fonctionnalités
 
-L'application comporte deux onglets : **Statistiques** (vue générale) et **Suivi individuel** (évolution individuelle).
+L'application comporte trois onglets : **Général** (vue d'ensemble de toutes les éditions), **Édition** (détail d'une édition au choix) et **Individuel** (suivi d'un coureur).
 
-### 📊 Statistiques
+### 📊 Général
 
-- **Sélecteur d'édition** : navigation entre les éditions 2022 à 2026, à droite des onglets.
-- **Indicateurs clés** : nombre de participants, d'hommes et de femmes, avec le temps moyen de chacun.
-- **Podiums** hommes et femmes, avec gestion des ex æquo.
-- **Filtre par catégorie** (Scratch, CA, JU, ES, SE, M0 à M9) appliqué aux podiums, aux graphiques de distribution et à l'évolution de la densité.
-- **Distribution des temps officiels**, au choix :
-  - *Courbe* : densité de coureurs par sexe, sur les temps pistolet, avec un axe gradué toutes les 10 minutes ;
-  - *Tranches* : nombre de coureurs par tranche de performance de 10 minutes (de « < 1h10 » à « ≥ 2h30 »).
-- **Répartition hommes / femmes** sous forme d'anneau.
+Vue d'ensemble sur toutes les éditions et toutes les catégories confondues.
+
+- **Records** féminin et masculin (depuis 1994) avec le nom du détenteur et l'année, et **plus grand nombre de participations**.
+- **Podiums des participations** : les 3 coureuses et les 3 coureurs les plus fidèles, classés par nombre d'éditions.
 - **Évolution entre les éditions**, au choix :
   - *Nombre* : nombre de coureurs par édition, hommes et femmes ;
   - *Densité* : part des arrivants par tranche de 10 minutes, année après année (barres empilées à 100 %).
 
-### 🏃 Suivi individuel
+### 👟 Édition
+
+Détail d'une édition, à choisir parmi toutes les éditions disponibles.
+
+- **Sélecteur d'édition**, à droite des onglets : liste déroulante avec recherche (taper une année pour la retrouver) et flèches ‹ › pour passer à l'édition précédente ou suivante.
+- **Indicateurs clés** : nombre de participants, d'hommes et de femmes, avec le temps moyen de chacun.
+- **Filtre par catégorie** (Scratch, CA, JU, ES, SE, M0 à M9), propre à l'édition choisie, appliqué aux podiums et aux graphiques de distribution.
+- **Podiums** hommes et femmes, avec gestion des ex æquo.
+- **Distribution des temps officiels**, au choix :
+  - *Courbe* : densité de coureurs par sexe, sur les temps pistolet, avec un axe gradué toutes les 10 minutes ;
+  - *Tranches* : nombre de coureurs par tranche de performance de 10 minutes (de "< 1h10" à "> 2h30").
+- **Répartition hommes / femmes** sous forme d'anneau.
+
+### 🏃 Individuel
 
 - **Recherche d'un coureur** par nom ou prénom, dans n'importe quel ordre, sans tenir compte des accents ni des majuscules. En cas d'homonymes, une liste permet de choisir le bon coureur.
 - **Indicateurs personnels** : nombre d'éditions courues, meilleur temps (avec son année) et nombre de médailles (or, argent, bronze) obtenues sur les podiums au scratch.
-- **Évolution des performances** : graphique du temps de chaque édition, avec le meilleur temps mis en évidence.
+- **Évolution des performances** : graphique du temps de chaque édition, avec le meilleur temps mis en évidence. Les libellés s'inclinent quand le coureur a beaucoup de participations.
 - **Détail par édition** : temps, place au scratch, place chez les hommes ou les femmes, catégorie et médaille éventuelle.
-- **Carte récap en PDF** : chaque coureur peut télécharger une carte (format A5) avec son nom, le logo de la course, ses chiffres clés et l'évolution de ses temps.
+- **Carte récap en PDF** : chaque coureur peut télécharger une carte (format A5) avec son nom, le logo de la course, ses chiffres clés et l'évolution de ses temps sur les éditions courues.
 
 Les couleurs suivent partout la même règle : **rouge pour les hommes, teal pour les femmes**.
 
@@ -57,7 +66,7 @@ Les couleurs suivent partout la même règle : **rouge pour les hommes, teal pou
 | `Cat`     | Catégorie (`SE`, `M0`…)                                            |
 | `Temps_s` | Temps pistolet en secondes ; vide pour les abandons (DNF)          |
 
-Les abandons sont comptés parmi les participants mais exclus des moyennes, des courbes, des tranches et des podiums.
+Les abandons sont comptés parmi les participants mais exclus des moyennes, des courbes, des tranches et des podiums. Les records sont calculés à partir de 1994.
 
 ## Crédits
 
