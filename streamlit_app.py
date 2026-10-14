@@ -20,6 +20,7 @@ FOND, TEAL, ROUGE = "#0F2B30", "#3AB5B0", "#C24247"
 OR, ARGENT, BRONZE = "#E0B400", "#9A9A9A", "#E8743B"
 SEXES = {"Homme": "Hommes", "Femme": "Femmes"}
 TRANCHE_DEBUT, TRANCHE_FIN, TRANCHE_PAS = 70, 150, 10   # < 1h10 | 1h10-1h20 |...| 2h20-2h30 | ≥ 2h30
+HEADS = ".st-key-evol_head, .st-key-distrib_head, .st-key-classement_head"
 
 st.set_page_config(page_title="Statistiques - Semi-Marathon Cancale Saint-Malo", page_icon="⏱️", layout="wide")
 
@@ -89,45 +90,51 @@ st.markdown(
                   text-shadow:0 2px 14px rgba(0,0,0,.45); }}
       .hero .h span {{ color:{TEAL}; }}
       
-      .st-key-evol_head {{ background:rgba(15,43,48,.92); backdrop-filter:blur(4px); border-radius:12px 12px 0 0;
-                           padding:10px 16px 15px 16px; margin-bottom:-1rem; box-shadow:inset 0 -3px 0 #fff; }}
-      .st-key-evol_head .titre {{ background:none; box-shadow:none; backdrop-filter:none; padding:0; border-radius:0; }}
-      .st-key-evol_head [data-testid="stHorizontalBlock"] {{ align-items:center; }}
-      .st-key-evol_head [data-testid="stColumn"]:last-child [data-testid="stElementContainer"] {{
-            width:100%; display:flex; justify-content:flex-end; }}
-      .st-key-evol_head [data-testid="stButtonGroup"] {{ background:transparent; width:fit-content; }}
-      .st-key-evol_head [role="radiogroup"] {{ background:rgba(255,255,255,.08); border-radius:999px; padding:4px;
-            gap:4px; width:fit-content; border:1px solid rgba(255,255,255,.15); }}
-      .st-key-evol_head button[role="radio"] {{ background:transparent !important; border:0 !important;
-            border-radius:999px !important; padding:5px 16px; }}
-      .st-key-evol_head button[role="radio"] * {{ color:rgba(255,255,255,.75) !important; font-weight:600; }}
-      .st-key-evol_head button[role="radio"]:hover * {{ color:#fff !important; }}
-      .st-key-evol_head button[role="radio"][aria-checked="true"] {{ background:#fff !important; }}
-      .st-key-evol_head button[role="radio"][aria-checked="true"] * {{ color:{FOND} !important; font-weight:700; }}
+      /* ---------- Cartes d'en-tête (evol, distrib, classement) ---------- */
+        :is({HEADS}) {{
+            background: rgba(15,43,48,.92); backdrop-filter: blur(4px);
+            border-radius: 12px 12px 0 0; padding: 10px 16px 15px 16px;
+            margin-bottom: -1.05rem; box-shadow: inset 0 -3px 0 #fff; gap: 0;
+        }}
+        :is({HEADS}) .titre {{
+            background: none !important; box-shadow: none !important;
+            backdrop-filter: none !important; border: 0 !important;
+            padding: 0; border-radius: 0; width: fit-content;
+        }}
+        :is({HEADS}) .titre::before,
+        :is({HEADS}) .titre::after {{ display: none !important; }}
 
-      .st-key-distrib_head {{ background:rgba(15,43,48,.92); backdrop-filter:blur(4px); -radius:12px 12px 0 0;
-                           padding:10px 16px 15px 16px; margin-bottom:-1rem; box-shadow:inset 0 -3px 0 #fff; }}
-      .st-key-distrib_head .titre {{ background:none; box-shadow:none; backdrop-filter:none; padding:0; border-radius:0; }}
-      .st-key-distrib_head [data-testid="stHorizontalBlock"] {{ align-items:center; }}
-      .st-key-distrib_head [data-testid="stColumn"]:last-child [data-testid="stElementContainer"] {{
-            width:100%; display:flex; justify-content:flex-end; }}
-      .st-key-distrib_head [data-testid="stButtonGroup"] {{ background:transparent; width:fit-content; }}
-      .st-key-distrib_head [role="radiogroup"] {{ background:rgba(255,255,255,.08); border-radius:999px; padding:4px;
-            gap:4px; width:fit-content; border:1px solid rgba(255,255,255,.15); }}
-      .st-key-distrib_head button[role="radio"] {{ background:transparent !important; border:0 !important;
-            border-radius:999px !important; padding:5px 16px; }}
-      .st-key-distrib_head button[role="radio"] * {{ color:rgba(255,255,255,.75) !important; font-weight:600; }}
-      .st-key-distrib_head button[role="radio"]:hover * {{ color:#fff !important; }}
-      .st-key-distrib_head button[role="radio"][aria-checked="true"] {{ background:#fff !important; }}
-      .st-key-distrib_head button[role="radio"][aria-checked="true"] * {{ color:{FOND} !important; font-weight:700; }}
-      
-      /* --- Header Tableau classement des éditions --- */
-      .st-key-evol_head, .st-key-classement_head {{background: rgba(15,43,48,.92);backdrop-filter: blur(4px); border-radius: 12px 12px 0 0;
-      padding: 10px 16px 15px 16px;margin-bottom: -1.05rem;box-shadow: inset 0 -3px 0 #fff;gap: 0;}}
-      .st-key-evol_head .titre,.st-key-classement_head .titre {{background: none !important; box-shadow: none!important; backdrop-filter: none!important
-      ;padding: 0; border-radius: 0;}}
-      .st-key-classement_head [data-testid="stTooltipIcon"] svg {{color: rgba(255,255,255,.75);}}
-      
+        /* ---------- Titre + icône d'aide collée ---------- */
+        :is({HEADS}) [data-testid="stMarkdown"] {{
+            display: flex !important; flex-direction: row;
+            align-items: flex-start; justify-content: flex-start !important; gap: 0;
+        }}
+        :is({HEADS}) [data-testid="stMarkdownContainer"] {{
+            flex: 0 1 auto !important; width: auto !important;
+        }}
+        :is({HEADS}) [data-testid="stTooltipIcon"] {{
+            margin: 8px 0 0 10px !important; position: static !important; flex: 0 0 auto;
+        }}
+
+        /* ---------- Contrôle segmenté (colonne de droite) ---------- */
+        :is({HEADS}) [data-testid="stHorizontalBlock"] {{ align-items: center; }}
+        :is({HEADS}) [data-testid="stColumn"]:last-child [data-testid="stElementContainer"] {{
+            width: 100%; display: flex; justify-content: flex-end;
+        }}
+        :is({HEADS}) [data-testid="stButtonGroup"] {{ background: transparent; width: fit-content; }}
+        :is({HEADS}) [role="radiogroup"] {{
+            background: rgba(255,255,255,.08); border-radius: 999px; padding: 4px; gap: 4px;
+            width: fit-content; border: 1px solid rgba(255,255,255,.15);
+        }}
+        :is({HEADS}) button[role="radio"] {{
+            background: transparent !important; border: 0 !important;
+            border-radius: 999px !important; padding: 5px 16px;
+        }}
+        :is({HEADS}) button[role="radio"] * {{ color: rgba(255,255,255,.75) !important; font-weight: 600; }}
+        :is({HEADS}) button[role="radio"]:hover * {{ color: #fff !important; }}
+        :is({HEADS}) button[role="radio"][aria-checked="true"] {{ background: #fff !important; }}
+        :is({HEADS}) button[role="radio"][aria-checked="true"] * {{ color: {FOND} !important; font-weight: 700; }}
+              
       /* --- carte verre --- */
       .st-key-perf {{
             background:linear-gradient(180deg, rgba(15,43,48,.62), rgba(15,43,48,.36));
@@ -186,13 +193,33 @@ st.markdown(
             background:rgba(255,255,255,.22) !important; border:1px solid #fff !important; }}
       .st-key-pills_cat button[role="radio"][aria-checked="true"] * {{ color:#fff !important; font-weight:700; }}
       
-      /* l'icône ? elle-même */
-      [data-testid="stTooltipIcon"] svg {{color: {ROUGE} !important; fill: {ROUGE} !important;}}
-      /* hover */
-      [data-testid="stTooltipIcon"]:hover svg {{color: {TEAL} !important;fill: {TEAL} !important;}}
-      /* l'icône ? d'un st.markdown avec help, uniquement dans la colonne de gauche */
-      .st-key-suivi ~ div [data-testid="stTooltipIcon"], div[data-testid="stMarkdownContainer"] + [data-testid="stTooltipIcon"] {{
-          margin-top: -38px; margin-left: auto; margin-right: 8px; z-index: 2;position: relative;}}
+        /* l'icône ? elle-même */
+        [data-testid="stTooltipIcon"] svg {{fill: {TEAL} !important;}}
+        [data-testid="stTooltipIcon"]:hover svg {{fill: #186B68 !important;}}
+
+        /* st.markdown(help=...) : titre + icône sur une même ligne, icône collée */
+        .st-key-evol_head [data-testid="stMarkdown"],
+        .st-key-classement_head [data-testid="stMarkdown"],
+        .st-key-suivi ~ div [data-testid="stMarkdown"] {{
+            display: flex !important;
+            flex-direction: row;
+            align-items: flex-start;
+            justify-content: flex-start !important;
+            gap: 0;
+        }}
+        .st-key-evol_head [data-testid="stMarkdownContainer"],
+        .st-key-classement_head [data-testid="stMarkdownContainer"],
+        .st-key-suivi ~ div [data-testid="stMarkdownContainer"] {{
+            flex: 0 1 auto !important;
+            width: auto !important;
+        }}
+        .st-key-evol_head [data-testid="stTooltipIcon"],
+        .st-key-classement_head [data-testid="stTooltipIcon"],
+        .st-key-suivi ~ div [data-testid="stTooltipIcon"] {{
+            margin: 8px 0 0 10px !important;   /* 8px = alignement vertical sur la ligne du titre */
+            position: static !important;
+            flex: 0 0 auto;
+        }}
         
       .titre {{ display:flex; align-items:center; gap:12px; background:rgba(15,43,48,.92);
                 backdrop-filter:blur(4px); border-radius:12px 12px 0 0; padding:9px 16px;
@@ -575,20 +602,20 @@ with tab_stats:
     # Graphiques distribution des temps (courbe) / densité par tranche de performance
     # ----------------------------------------------------------------------------
     with st.container(key="evol_head"):
-        c_titre, c_vue = st.columns([3, 1], vertical_alignment="center")
-
+    
         info_caption1 = (
             f"**Éditions {annees[0]} à {annees[-1]}**  \n"
             "Temps officiel  \n"
             "Abandons exclus des moyennes et distributions  \n"
             "Uniquement les coureurs individuels."
         )
-
+        c_titre, c_vue = st.columns([3, 1], vertical_alignment="center")
         with c_vue:
             vue = st.segmented_control(
                 "Graphique", ["Nombre", "Densité"], default="Nombre",
                 key="vue_evol", label_visibility="collapsed",
             ) or "Nombre"
+            
         if vue == "Nombre":
             c_titre.markdown(
                 titre("📶", "Évolution du nombre de coureurs",
