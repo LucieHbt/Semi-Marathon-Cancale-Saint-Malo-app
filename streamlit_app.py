@@ -22,7 +22,7 @@ SEXES = {"Homme": "Hommes", "Femme": "Femmes"}
 TRANCHE_DEBUT, TRANCHE_FIN, TRANCHE_PAS = 70, 150, 10   # < 1h10 | 1h10-1h20 |...| 2h20-2h30 | ≥ 2h30
 HEADS = ".st-key-evol_head, .st-key-distrib_head, .st-key-classement_head"
 
-st.set_page_config(page_title="Statistiques - Semi-Marathon Cancale Saint-Malo", page_icon="⏱️", layout="wide")
+st.set_page_config(page_title="Statistiques - Semi-Marathon Cancale Saint-Malo", page_icon="💧", layout="wide")
 
 st.markdown(
     f"""
