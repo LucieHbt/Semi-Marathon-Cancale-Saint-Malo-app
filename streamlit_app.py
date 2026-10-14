@@ -1087,48 +1087,44 @@ with tab_coureur:
                 if arr_c.empty:
                     st.write("Aucun temps à afficher.")
                 else:
+                    arr_c = arr_c.sort_values("Annee")
+                    x = arr_c["Annee"].astype(int).to_numpy()
                     y = arr_c["Temps_s"].to_numpy()
                     marge = max(120, (y.max() - y.min()) * 0.25)
                     vals, txt = graduations_temps(y.min() - marge, y.max() + marge)
                     ib = int(np.argmin(y))
-                    biseau = len(y) > 8
+                    etiquettes = [hms(v) for v in y]
+
                     fig = go.Figure(go.Scatter(
-                        x=arr_c["Annee"].astype(int).astype(str), y=y,
-                        mode="lines+markers" if biseau else "lines+markers+text",
+                        x=x, y=y,
+                        mode="lines+markers+text",
                         line=dict(color=coul_sexe, width=3),
                         marker=dict(size=[16 if k == ib else 10 for k in range(len(y))],
                                     color=[OR if k == ib else coul_sexe for k in range(len(y))],
                                     line=dict(color="white", width=2)),
-                        text=[hms(v) for v in y], textposition="top center",
-                        textfont=dict(color="white", size=13),
-                        customdata=np.c_[[hms(v) for v in y],
-                                         arr_c["Place_gen"].to_numpy(),
-                                         arr_c["Place"].to_numpy()],
+                        text=etiquettes, textposition="top center",
+                        textfont=dict(color="white", size=12),
+                        customdata=np.c_[etiquettes,
+                                        arr_c["Place_gen"].to_numpy(),
+                                        arr_c["Place"].to_numpy()],
                         hovertemplate="%{x}<br>%{customdata[0]}<br>%{customdata[1]:.0f}e au scratch"
-                                      "<br>%{customdata[2]:.0f}e " + sexe.lower()
-                                      + "<extra></extra>",
+                                    "<br>%{customdata[2]:.0f}e " + sexe.lower()
+                                    + "<extra></extra>",
                         cliponaxis=False,
                     ))
-                    if biseau:
-                        fig.update_layout(annotations=[
-                            dict(x=str(int(a)), y=v, text=hms(v), showarrow=False,
-                                 textangle=-60, xanchor="left", yanchor="bottom",
-                                 xshift=-2, yshift=10,
-                                 font=dict(color="white", size=12))
-                            for a, v in zip(arr_c["Annee"], y)
-                        ])
                     fig.update_layout(
-                        height=380, margin=dict(l=10, r=20, t=60 if biseau else 30, b=10),
+                        height=380, margin=dict(l=10, r=20, t=40, b=10),
                         plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
                         font=dict(color="white"),
-                        xaxis=dict(type="category", categoryorder="array",
-                                   categoryarray=[str(int(a)) for a in annees],
-                                   showgrid=False, color="white",
-                                   tickangle=-45 if biseau else 0, automargin=True),
+                        xaxis=dict(type="linear", tickmode="array",
+                                tickvals=list(x), ticktext=[str(a) for a in x],
+                                range=[x.min() - 0.8, x.max() + 0.8],
+                                showgrid=False, zeroline=False, color="white",
+                                tickangle=-45 if len(x) > 10 else 0, automargin=True),
                         yaxis=dict(tickvals=vals, ticktext=txt,
-                                   range=[vals[0], vals[-1]],
-                                   showgrid=True, gridcolor="rgba(255,255,255,.12)",
-                                   zeroline=False, color="#fff", automargin=True),
+                                range=[vals[0], vals[-1]],
+                                showgrid=True, gridcolor="rgba(255,255,255,.12)",
+                                zeroline=False, color="#fff", automargin=True),
                     )
                     st.plotly_chart(fig, width="stretch", theme=None,
                                     config={"displayModeBar": False})
