@@ -31,8 +31,7 @@ st.markdown(
     url("https://semicancalestmalo.fr/assets/victoire.jpg") center / cover fixed no-repeat;}}
 
     header[data-testid="stHeader"] {{background: transparent;}}
-
-    .st-emotion-cache-zy6yx3 {{padding: 1rem 1rem 1rem;}}
+    [data-testid="stMainBlockContainer"], .stMainBlockContainer {{max-width: 100% !important;width: 100% !important;padding: 1rem 1rem 1rem !important;}}
 
     .stApp [data-testid="stCaptionContainer"],
     .stApp [data-testid="stCaptionContainer"] * {{color: rgba(255,255,255,.70);}}
@@ -122,6 +121,13 @@ st.markdown(
       .st-key-distrib_head button[role="radio"][aria-checked="true"] {{ background:#fff !important; }}
       .st-key-distrib_head button[role="radio"][aria-checked="true"] * {{ color:{FOND} !important; font-weight:700; }}
       
+      /* --- Header Tableau classement des éditions --- */
+      .st-key-evol_head, .st-key-classement_head {{background: rgba(15,43,48,.92);backdrop-filter: blur(4px); border-radius: 12px 12px 0 0;
+      padding: 10px 16px 15px 16px;margin-bottom: -1.05rem;box-shadow: inset 0 -3px 0 #fff;gap: 0;}}
+      .st-key-evol_head .titre,.st-key-classement_head .titre {{background: none !important; box-shadow: none!important; backdrop-filter: none!important
+      ;padding: 0; border-radius: 0;}}
+      .st-key-classement_head [data-testid="stTooltipIcon"] svg {{color: rgba(255,255,255,.75);}}
+      
       /* --- carte verre --- */
       .st-key-perf {{
             background:linear-gradient(180deg, rgba(15,43,48,.62), rgba(15,43,48,.36));
@@ -181,7 +187,7 @@ st.markdown(
       .st-key-pills_cat button[role="radio"][aria-checked="true"] * {{ color:#fff !important; font-weight:700; }}
       
       /* l'icône ? elle-même */
-      [data-testid="stTooltipIcon"] svg {{color: #fff !important; fill: #fff !important;}}
+      [data-testid="stTooltipIcon"] svg {{color: {ROUGE} !important; fill: {ROUGE} !important;}}
       /* hover */
       [data-testid="stTooltipIcon"]:hover svg {{color: {TEAL} !important;fill: {TEAL} !important;}}
       /* l'icône ? d'un st.markdown avec help, uniquement dans la colonne de gauche */
@@ -677,7 +683,7 @@ with tab_stats:
     classement["Rang"] = (
         classement["Nb_editions"].rank(method="min", ascending=False).astype(int)
     )
-
+    
     vue = pd.DataFrame({
         "#":              classement["Rang"],
         "Coureur":        classement["Nom"].map(nom_affiche),
@@ -690,12 +696,17 @@ with tab_stats:
         "Année":          classement["Annee"]
                               .map(lambda a: int(a) if pd.notna(a) else "–"),
     })
+    
+    nb = f"{len(classement):,}".replace(",", " ")
+    info_caption4 = f"**{nb} coureurs** · les ex æquo partagent le même rang."
+    
+    with st.container(key="classement_head"):
+        st.markdown(
+            titre("🎽", "Classement par participations", "Toutes éditions",
+                  "Nombre d'éditions", FOND, graph=True),
+            unsafe_allow_html=True, help=info_caption4,
+            )
 
-    st.markdown(
-        titre("🎽", "Classement par participations", "Toutes éditions",
-              "Nombre d'éditions", FOND, graph=True),
-        unsafe_allow_html=True,
-    )
     st.dataframe(
         vue,
         hide_index=True,
@@ -709,10 +720,6 @@ with tab_stats:
             "Meilleur temps": st.column_config.TextColumn(width="small"),
             "Année":          st.column_config.NumberColumn(width="small"),
         },
-    )
-    st.caption(
-        f"{len(classement):,} coureurs · "
-        "les ex æquo partagent le même rang.".replace(",", " ")
     )
 # ---------------------------------------------------------------------------
 # Onglet 2 : par édition
