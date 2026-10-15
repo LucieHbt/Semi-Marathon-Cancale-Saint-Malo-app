@@ -20,7 +20,7 @@ FOND, TEAL, ROUGE = "#0F2B30", "#3AB5B0", "#C24247"
 OR, ARGENT, BRONZE = "#E0B400", "#9A9A9A", "#E8743B"
 SEXES = {"Homme": "Hommes", "Femme": "Femmes"}
 TRANCHE_DEBUT, TRANCHE_FIN, TRANCHE_PAS = 70, 150, 10   # < 1h10 | 1h10-1h20 |...| 2h20-2h30 | ≥ 2h30
-HEADS = ".st-key-evol_head, .st-key-distrib_head, .st-key-classement_head"
+HEADS = ".st-key-evol_head, .st-key-perf, .st-key-distrib_head, .st-key-classement_head"
 
 st.set_page_config(page_title="Statistiques - Semi-Marathon Cancale Saint-Malo", page_icon="💧", layout="wide")
 
@@ -32,7 +32,7 @@ st.markdown(
     url("https://semicancalestmalo.fr/assets/victoire.jpg") center / cover fixed no-repeat;}}
 
     header[data-testid="stHeader"] {{background: transparent;}}
-    [data-testid="stMainBlockContainer"], .stMainBlockContainer {{max-width: 100% !important;width: 100% !important;padding: 1rem 1rem 1rem !important;}}
+    [data-testid="stMainBlockContainer"], .stMainBlockContainer {{max-width: 90% !important;width: 100% !important;padding: 1rem 1rem 1rem !important;}}
 
     .stApp [data-testid="stCaptionContainer"],
     .stApp [data-testid="stCaptionContainer"] * {{color: rgba(255,255,255,.70);}}
@@ -94,7 +94,7 @@ st.markdown(
         :is({HEADS}) {{
             background: rgba(15,43,48,.92); backdrop-filter: blur(4px);
             border-radius: 12px 12px 0 0; padding: 10px 16px 15px 16px;
-            margin-bottom: -1.05rem; box-shadow: inset 0 -3px 0 #fff; gap: 0;
+            margin-bottom: -1rem; box-shadow: inset 0 -3px 0 #fff; gap: 0;
         }}
         :is({HEADS}) .titre {{
             background: none !important; box-shadow: none !important;
